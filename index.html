@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MotoCare - Pengingat Servis Kendaraan</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              purple: '#5B44E6',
+              purpleDark: '#412BB8',
+              orange: '#FF7A29',
+              orangeDark: '#E66315',
+              darkSurface: '#121218'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Styling Dasar & Transisi */
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      background: linear-gradient(180deg, #5B44E6 0%, #462EBF 60%, #3B23A8 100%);
+      min-height: 100vh;
+    }
+
+    /* Scrollbar Halus */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 9999px;
+    }
+
+    /* Animasi Lembut */
+    .fade-in {
+      animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Efek Floating Nav Glow */
+    .floating-dock-shadow {
+      box-shadow: 0 16px 35px -5px rgba(18, 10, 60, 0.4), 0 8px 16px -6px rgba(0, 0, 0, 0.15);
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased pb-28 md:pb-12">
+
+  <!-- Container Wrapper: Presets Mobile-First Center Layout pada Desktop -->
+  <div class="max-w-md mx-auto min-h-screen flex flex-col relative px-4 pt-4 md:pt-8 md:max-w-lg">
+
+    <!-- TOP APP BAR DENGAN LOGO RESMI MOTOCARE -->
+    <header class="flex items-center justify-between py-2 text-white">
+      <div class="flex items-center space-x-2">
+        <!-- Official Logo MotoCare (Vector SVG Graphic) -->
+        <div class="flex items-center cursor-pointer" onclick="switchTab('dashboard')" title="MotoCare - Beranda">
+          <svg class="h-12 w-auto max-w-[210px] sm:max-w-[250px] drop-shadow-lg select-none transition-transform hover:scale-[1.02] active:scale-95" viewBox="0 0 340 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- Gradien Roda Gigi & Speedometer -->
+              <linearGradient id="logoGearGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#312E81" />
+                <stop offset="100%" stop-color="#0F172A" />
+              </linearGradient>
+              <linearGradient id="logoSpeedo" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0%" stop-color="#FACC15" />
+                <stop offset="45%" stop-color="#F97316" />
+                <stop offset="100%" stop-color="#EF4444" />
+              </linearGradient>
+              <!-- Gradien Tulisan Moto & Care -->
+              <linearGradient id="logoMotoGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#FFFFFF" />
+                <stop offset="55%" stop-color="#F1F5F9" />
+                <stop offset="100%" stop-color="#CBD5E1" />
+              </linearGradient>
+              <linearGradient id="logoCareGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#FDBA74" />
+                <stop offset="35%" stop-color="#FF7A29" />
+                <stop offset="100%" stop-color="#EA580C" />
+              </linearGradient>
+              <!-- Gradien Pita Badge -->
+              <linearGradient id="logoRibbonGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#0F172A" />
+                <stop offset="25%" stop-color="#1E3A8A" />
+                <stop offset="100%" stop-color="#2563EB" />
+              </linearGradient>
+              <!-- Filter Drop Shadow Logo -->
+              <filter id="logoShadow" x="-10%" y="-10%" width="125%" height="135%">
+                <feDropShadow dx="0" dy="2.5" stdDeviation="2" flood-color="#000000" flood-opacity="0.5" />
+              </filter>
+            </defs>
+
+            <!-- 1. LATAR BELAKANG: RODA GIGI & SPEEDOMETER -->
+            <g transform="translate(108, 6)">
+              <!-- Roda Gigi -->
+              <path d="M50 2 A38 38 0 0 1 76 14 L81 9 L89 17 L84 22 A38 38 0 0 1 92 37 L98 37 L98 49 L92 49 A38 38 0 0 1 84 64 L89 69 L81 77 L76 72 A38 38 0 0 1 50 84 L50 90 L38 90 L38 84 A38 38 0 0 1 12 72 L7 77 L-1 69 L4 64 A38 38 0 0 1 -4 49 L-10 49 L-10 37 L-4 37 A38 38 0 0 1 4 22 L-1 17 L7 9 L12 14 A38 38 0 0 1 38 2 L38 -4 L50 -4 Z" fill="url(#logoGearGrad)" stroke="#6366F1" stroke-width="1.8" />
+              <!-- Busur Speedometer -->
+              <path d="M12 56 A36 36 0 1 1 76 56" fill="none" stroke="url(#logoSpeedo)" stroke-width="7" stroke-linecap="round" />
+              <!-- Jarum Speedometer & Pusat Poros -->
+              <circle cx="44" cy="46" r="3.5" fill="#FFFFFF" />
+              <line x1="44" y1="46" x2="68" y2="28" stroke="#FF7A29" stroke-width="3" stroke-linecap="round" />
+            </g>
+
+            <!-- 2. CLIPBOARD CATATAN & IKON MOBIL DI KANAN -->
+            <g transform="translate(205, 10)">
+              <rect x="0" y="4" width="34" height="42" rx="6" fill="#FFFFFF" stroke="#3B82F6" stroke-width="2" />
+              <rect x="9" y="1" width="16" height="6" rx="2" fill="#93C5FD" />
+              <!-- Baris Ceklis -->
+              <path d="M6 16 L10 20 L17 13 M6 25 L10 29 L17 22" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <line x1="20" y1="16" x2="28" y2="16" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" />
+              <line x1="20" y1="25" x2="28" y2="25" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" />
+              <!-- Lingkaran Mobil Biru -->
+              <circle cx="39" cy="38" r="11" fill="#1D4ED8" stroke="#FFFFFF" stroke-width="2" />
+              <path d="M33.5 38.5 C33.5 36.5 35.5 35 39 35 C42.5 35 44.5 36.5 44.5 38.5 L45 40.5 C45 41.5 44.5 42 43.5 42 L34.5 42 C33.5 42 33 41.5 33 40.5 Z" fill="#FFFFFF" />
+            </g>
+
+            <!-- 3. KENDARAAN: SEPEDA MOTOR BIRU SPORT (KIRI) -->
+            <g transform="translate(22, 12)">
+              <path d="M12 44 L17 31 L27 25 L38 29 L46 38 L50 44 Z" fill="#0284C7" stroke="#082F49" stroke-width="1.2" />
+              <path d="M23 23 L29 16 L38 16 L34 23 Z" fill="#38BDF8" />
+              <circle cx="16" cy="44" r="10" fill="#0F172A" stroke="#38BDF8" stroke-width="2.2" />
+              <circle cx="16" cy="44" r="4" fill="#94A3B8" />
+              <circle cx="49" cy="44" r="10" fill="#0F172A" stroke="#38BDF8" stroke-width="2.2" />
+              <circle cx="49" cy="44" r="4" fill="#94A3B8" />
+              <!-- Stang & Spion -->
+              <path d="M32 16 L36 9 M27 16 L23 9" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round" />
+              <!-- Lampu Depan Menyala -->
+              <polygon points="35,24 43,26 39,32" fill="#E0F2FE" />
+            </g>
+
+            <!-- 4. KENDARAAN: MOBIL PUTIH MODERN (TENGAH) -->
+            <g transform="translate(84, 18)">
+              <!-- Kaca & Atap -->
+              <path d="M18 16 L28 4 L60 4 L70 16 Z" fill="#E2E8F0" stroke="#0F172A" stroke-width="1.6" />
+              <!-- Bodi Mobil -->
+              <path d="M8 16 L80 16 C85 17 88 21 88 26 L85 36 L3 36 L0 26 C0 21 3 17 8 16 Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.2" />
+              <!-- Grille Depan & Lampu LED -->
+              <rect x="27" y="22" width="34" height="11" rx="3.5" fill="#1E293B" stroke="#475569" stroke-width="1.2" />
+              <polygon points="6,21 23,23 21,29 7,28" fill="#E0F2FE" stroke="#0F172A" stroke-width="1.2" />
+              <polygon points="82,21 65,23 67,29 81,28" fill="#E0F2FE" stroke="#0F172A" stroke-width="1.2" />
+              <!-- Roda Mobil -->
+              <rect x="4" y="34" width="15" height="9" rx="2.5" fill="#0F172A" />
+              <rect x="69" y="34" width="15" height="9" rx="2.5" fill="#0F172A" />
+            </g>
+
+            <!-- 5. TIPOGRAFI 3D BOLD: "MotoCare" -->
+            <g filter="url(#logoShadow)">
+              <text x="18" y="74" font-family="'Plus Jakarta Sans', 'Segoe UI', Impact, sans-serif" font-size="44" font-weight="900" font-style="italic" fill="url(#logoMotoGrad)" stroke="#0B091A" stroke-width="6.5" stroke-linejoin="round" paint-order="stroke fill" letter-spacing="-1">Moto</text>
+              <text x="146" y="74" font-family="'Plus Jakarta Sans', 'Segoe UI', Impact, sans-serif" font-size="44" font-weight="900" font-style="italic" fill="url(#logoCareGrad)" stroke="#0B091A" stroke-width="6.5" stroke-linejoin="round" paint-order="stroke fill" letter-spacing="-1">Care</text>
+            </g>
+
+            <!-- 6. PITA BAWAH RESMI: "Record Kendaraan Bermotor" -->
+            <g transform="translate(34, 78)">
+              <!-- Bentuk Pita Melengkung -->
+              <path d="M9 0 L240 0 C246 0 252 4 256 10 L260 16 L248 16 C244 16 240 19 237 22 L232 22 L14 22 C6 22 0 16 0 9 C0 4 3 0 9 0 Z" fill="url(#logoRibbonGrad)" stroke="#38BDF8" stroke-width="1.2" />
+              <!-- Ikon Dokumen Bercentang -->
+              <g transform="translate(11, 4)">
+                <rect x="0" y="0" width="11" height="13" rx="1.8" fill="#FFFFFF" />
+                <line x1="2" y1="3" x2="7" y2="3" stroke="#1E3A8A" stroke-width="1.3" />
+                <line x1="2" y1="6" x2="8" y2="6" stroke="#1E3A8A" stroke-width="1.3" />
+                <circle cx="8" cy="9.5" r="2.2" fill="#10B981" />
+                <path d="M7 9.5 L7.8 10.3 L9.2 8.8" stroke="#FFFFFF" stroke-width="0.8" fill="none" />
+              </g>
+              <!-- Teks Pita Subjudul -->
+              <text x="30" y="14.5" font-family="'Plus Jakarta Sans', 'Segoe UI', sans-serif" font-size="9.8" font-weight="800" font-style="italic" fill="#FFFFFF" letter-spacing="0.3">Record Kendaraan Bermotor</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Quick Action Right & Tanggal Aktif -->
+      <div class="flex items-center space-x-2.5">
+        <div class="hidden sm:block text-right">
+          <span class="block text-[9px] text-white/70 font-semibold uppercase tracking-wider">Tanggal Aktif</span>
+          <span class="text-xs text-white font-bold" id="currentDateLabel">Monitoring Servis</span>
+        </div>
+        <button onclick="openModal('modalKendaraan')" class="w-10 h-10 rounded-full bg-white text-slate-800 flex items-center justify-center shadow-lg active:scale-95 transition-transform" title="Tambah Unit Kendaraan">
+          <svg class="w-5 h-5 text-indigo-700 font-bold" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT TABS -->
+
+    <!-- ==================== TAB 1: DASHBOARD ==================== -->
+    <main id="tab-dashboard" class="tab-pane flex-1 mt-4 space-y-4 fade-in">
+      
+      <!-- 2-COLUMN ACTION CARDS (Mirip referensi Scan & Flashcard) -->
+      <div class="grid grid-cols-2 gap-3.5">
+        <!-- Action 1: Update KM Cepat -->
+        <div onclick="openQuickOdoSelector()" class="bg-white rounded-3xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-98 flex flex-col justify-between group">
+          <div class="w-10 h-10 rounded-2xl bg-orange-100 text-brand-orange flex items-center justify-center mb-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 class="font-bold text-slate-900 text-sm leading-snug">Update KM</h2>
+            <p class="text-[11px] text-slate-400 mt-0.5">Catat odometer harian</p>
+          </div>
+        </div>
+
+        <!-- Action 2: Catat Servis -->
+        <div onclick="switchTab('servis')" class="bg-white rounded-3xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-98 flex flex-col justify-between group">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 class="font-bold text-slate-900 text-sm leading-snug">Input Servis</h2>
+            <p class="text-[11px] text-slate-400 mt-0.5">Ganti oli & perawatan</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEATURED ALERT CARD: HIGHLIGHT ORANGE (Persis gaya Study Sheet oranye di gambar) -->
+      <div id="featuredAlertCard" class="bg-brand-orange text-white rounded-3xl p-5 shadow-lg shadow-orange-500/25 relative overflow-hidden transition-all">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/25 text-white backdrop-blur-sm mb-2">
+              🚨 Perhatian Khusus
+            </div>
+            <h2 id="featuredTitle" class="text-base font-bold leading-tight">Pemeriksaan Kendaraan</h2>
+            <p id="featuredSubtitle" class="text-xs text-white/90 mt-1">Semua unit dalam kondisi aman terkendali.</p>
+          </div>
+          <!-- Action Arrow Circle -->
+          <button id="featuredActionBtn" onclick="switchTab('kendaraan')" class="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition shrink-0 ml-2">
+            <svg class="w-4 h-4 transform -rotate-45" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="mt-4 pt-3 border-t border-white/20 flex items-center justify-between text-xs text-white/90">
+          <span id="featuredDateNote">Jadwal: Rutin</span>
+          <div class="flex items-center space-x-2">
+            <button id="btnFeaturedShare" onclick="openMessageModalCurrentUrgent()" class="px-2.5 py-1 rounded-full bg-white/20 hover:bg-white/30 text-[10px] font-bold backdrop-blur-sm transition flex items-center gap-1">
+              <span>💬</span> Kirim Pesan
+            </button>
+            <span id="featuredKmNote" class="font-semibold">Odometer Terpantau</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATS BAR (Ringkasan Metrik) -->
+      <div class="grid grid-cols-3 gap-2 text-white">
+        <div class="bg-white/15 backdrop-blur-md p-3 rounded-2xl border border-white/20 text-center">
+          <span class="block text-[10px] text-white/80 font-semibold">Total Unit</span>
+          <span id="vehicleCountBadge" class="text-sm font-extrabold text-white">0 unit</span>
+        </div>
+        <div class="bg-white/15 backdrop-blur-md p-3 rounded-2xl border border-white/20 text-center">
+          <span class="block text-[10px] text-white/80 font-semibold">Perlu Servis</span>
+          <span id="statAttentionCount" class="text-sm font-extrabold text-orange-200">0 Unit</span>
+        </div>
+        <div class="bg-white/15 backdrop-blur-md p-3 rounded-2xl border border-white/20 text-center">
+          <span class="block text-[10px] text-white/80 font-semibold">Bulan Ini</span>
+          <span id="statMonthlyExpense" class="text-xs font-extrabold text-white">Rp 0</span>
+        </div>
+      </div>
+
+      <!-- WATCHLIST MONITORING KENDARAAN (Sesuai Desain Modern) -->
+      <div class="space-y-2.5 pt-1">
+        <div class="flex items-center justify-between text-white px-1">
+          <div class="flex items-center space-x-2">
+            <h3 class="text-sm font-bold">Status Pemantauan Unit</h3>
+            <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">Watchlist</span>
+          </div>
+          <button onclick="refreshData()" class="text-[11px] font-bold text-white/80 hover:text-white flex items-center gap-1 active:scale-95 transition">
+            <span>🔄</span> Refresh
+          </button>
+        </div>
+
+        <!-- Dynamic List of Vehicle Cards with Ring Indicators -->
+        <div id="monitoringList" class="space-y-2.5">
+          <div class="bg-white rounded-2xl p-4 text-center text-slate-400 text-xs">Memuat status kendaraan...</div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ==================== TAB 2: KENDARAAN ==================== -->
+    <section id="tab-kendaraan" class="tab-pane hidden flex-1 mt-4 space-y-4 fade-in">
+      <div class="flex items-center justify-between text-white">
+        <div>
+          <h2 class="text-lg font-bold">Garasi Kendaraan</h2>
+          <p class="text-xs text-white/70">Kelola armada & motor pribadi Anda</p>
+        </div>
+        <button onclick="openModal('modalKendaraan')" class="px-3.5 py-1.5 rounded-full bg-white text-indigo-700 text-xs font-bold shadow-md active:scale-95 transition">
+          + Tambah Unit
+        </button>
+      </div>
+
+      <!-- List of Vehicles -->
+      <div id="garageList" class="space-y-3 pb-4">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: CATAT SERVIS ==================== -->
+    <section id="tab-servis" class="tab-pane hidden flex-1 mt-4 space-y-4 fade-in">
+      <div class="bg-white rounded-3xl p-5 shadow-xl">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-slate-900">Catat Servis Baru</h2>
+          <p class="text-xs text-slate-400">Simpan nota dan atur pengingat berikutnya</p>
+        </div>
+
+        <form id="formService" onsubmit="handleSaveService(event)" class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Kendaraan *</label>
+            <select id="srv_kendaraan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500" required onchange="onServiceVehicleSelected()">
+              <option value="">-- Pilih Unit --</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Tanggal Servis *</label>
+              <input type="date" id="srv_tanggal" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Odometer (KM) *</label>
+              <input type="number" id="srv_odometer" min="0" placeholder="Contoh: 12500" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500" required oninput="autoCalculateTargets()">
+            </div>
+          </div>
+
+          <!-- Quick Service Tag Chips -->
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1.5">Item Perawatan Cepat</label>
+            <div class="flex flex-wrap gap-1.5" id="serviceTagList">
+              <button type="button" onclick="toggleTag(this, 'Oli Mesin')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Oli Mesin</button>
+              <button type="button" onclick="toggleTag(this, 'Oli Gardan')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Oli Gardan</button>
+              <button type="button" onclick="toggleTag(this, 'Tune Up')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Tune Up</button>
+              <button type="button" onclick="toggleTag(this, 'Servis CVT')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Servis CVT</button>
+              <button type="button" onclick="toggleTag(this, 'Kampas Rem')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Kampas Rem</button>
+              <button type="button" onclick="toggleTag(this, 'Busi')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Busi</button>
+              <button type="button" onclick="toggleTag(this, 'Filter Udara')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Filter Udara</button>
+              <button type="button" onclick="toggleTag(this, 'Radiator Coolant')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Radiator</button>
+            </div>
+            <input type="hidden" id="srv_kategori">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Biaya (Rp)</label>
+              <input type="number" id="srv_biaya" placeholder="0" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Bengkel</label>
+              <input type="text" id="srv_bengkel" placeholder="Contoh: AHASS / Auto2000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Rincian Tambahan</label>
+            <input type="text" id="srv_rincian" placeholder="Merk suku cadang, catatan montir..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+
+          <!-- TARGET SERVIS BERIKUTNYA -->
+          <div class="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                <span>🎯</span> Jadwal Servis Mendatang
+              </span>
+              <span class="text-[10px] text-indigo-600 font-medium">Auto-Calculate</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[11px] text-slate-600 font-semibold mb-1">Target KM Berikutnya</label>
+                <input type="number" id="srv_target_km" class="w-full bg-white border border-indigo-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-indigo-900">
+                <div class="flex gap-1 mt-1.5">
+                  <button type="button" onclick="addKmQuick(2000)" class="text-[10px] bg-white border border-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded font-bold hover:bg-indigo-100">+2rb</button>
+                  <button type="button" onclick="addKmQuick(3000)" class="text-[10px] bg-white border border-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded font-bold hover:bg-indigo-100">+3rb</button>
+                  <button type="button" onclick="addKmQuick(4000)" class="text-[10px] bg-white border border-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded font-bold hover:bg-indigo-100">+4rb</button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-600 font-semibold mb-1">Target Tanggal</label>
+                <input type="date" id="srv_target_tgl" class="w-full bg-white border border-indigo-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-indigo-900">
+                <div class="flex gap-1 mt-1.5">
+                  <button type="button" onclick="addDaysQuick(60)" class="text-[10px] bg-white border border-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded font-bold hover:bg-indigo-100">+2 Bln</button>
+                  <button type="button" onclick="addDaysQuick(90)" class="text-[10px] bg-white border border-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded font-bold hover:bg-indigo-100">+3 Bln</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 flex gap-2">
+            <button type="button" onclick="resetServiceForm()" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition">
+              Reset Form
+            </button>
+            <button type="submit" id="btnSaveService" class="flex-1 py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orangeDark text-white text-xs font-bold shadow-md shadow-orange-500/25 active:scale-98 transition">
+              Simpan Riwayat
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: RIWAYAT SERVIS ==================== -->
+    <section id="tab-riwayat" class="tab-pane hidden flex-1 mt-4 space-y-4 fade-in">
+      <div class="flex items-center justify-between text-white">
+        <div>
+          <h2 class="text-lg font-bold">Riwayat Servis</h2>
+          <p class="text-xs text-white/70">Catatan nota perawatan dan perbaikan</p>
+        </div>
+        <button onclick="switchTab('servis')" class="px-3.5 py-1.5 rounded-full bg-white text-indigo-700 text-xs font-bold shadow-md active:scale-95 transition">
+          + Catat Servis
+        </button>
+      </div>
+
+      <!-- Search & Filter Controls -->
+      <div class="bg-white/10 backdrop-blur-md p-2 rounded-2xl flex gap-2 border border-white/15">
+        <input type="text" id="searchLogInput" placeholder="Cari bengkel, nota, nopol..." class="flex-1 bg-white rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none" oninput="renderHistoryList()">
+        <select id="filterLogVehicle" class="bg-white rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700 focus:outline-none" onchange="renderHistoryList()">
+          <option value="ALL">Semua Unit</option>
+        </select>
+      </div>
+
+      <!-- History Item Cards -->
+      <div id="historyList" class="space-y-3 pb-4">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- ==================== FLOATING BOTTOM NAVIGATION DOCK ==================== -->
+    <nav class="fixed bottom-4 inset-x-4 max-w-md mx-auto bg-white/95 backdrop-blur-md rounded-full px-3 py-2 floating-dock-shadow flex items-center justify-between z-40 border border-white/60">
+      
+      <!-- Nav 1: Dashboard -->
+      <button onclick="switchTab('dashboard')" id="nav-btn-dashboard" class="nav-button flex-1 flex flex-col items-center justify-center text-brand-orange transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+        <span class="text-[10px] font-bold mt-0.5">Home</span>
+      </button>
+
+      <!-- Nav 2: Garasi Kendaraan -->
+      <button onclick="switchTab('kendaraan')" id="nav-btn-kendaraan" class="nav-button flex-1 flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        </svg>
+        <span class="text-[10px] font-bold mt-0.5">Garasi</span>
+      </button>
+
+      <!-- Center FAB: Tambah Servis -->
+      <div class="flex-none px-2">
+        <button onclick="switchTab('servis')" class="w-12 h-12 bg-slate-900 text-white rounded-full flex items-center justify-center -mt-6 shadow-xl ring-4 ring-white active:scale-95 transition-transform" title="Catat Servis Cepat">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Nav 3: Form Servis -->
+      <button onclick="switchTab('servis')" id="nav-btn-servis" class="nav-button flex-1 flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+        </svg>
+        <span class="text-[10px] font-bold mt-0.5">Servis</span>
+      </button>
+
+      <!-- Nav 4: Riwayat -->
+      <button onclick="switchTab('riwayat')" id="nav-btn-riwayat" class="nav-button flex-1 flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+        </svg>
+        <span class="text-[10px] font-bold mt-0.5">Riwayat</span>
+      </button>
+
+    </nav>
+  </div>
+
+  <!-- ==================== MODAL: TAMBAH / EDIT KENDARAAN ==================== -->
+  <div id="modalKendaraan" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 fade-in">
+    <div class="bg-white w-full max-w-sm rounded-[28px] p-5 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 id="modalKendaraanTitle" class="text-sm font-bold text-slate-800">Tambah Kendaraan</h3>
+        <button onclick="closeModal('modalKendaraan')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
+          ✕
+        </button>
+      </div>
+
+      <form id="formKendaraanModal" onsubmit="handleSaveKendaraanModal(event)" class="mt-4 space-y-3">
+        <input type="hidden" id="modal_k_id">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Nomor Polisi *</label>
+          <input type="text" id="modal_k_nopol" placeholder="B 1234 ABC" required class="w-full uppercase bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Merk & Model *</label>
+          <input type="text" id="modal_k_nama" placeholder="Honda Vario 160 ABS" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Jenis</label>
+            <select id="modal_k_jenis" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="Motor">Sepeda Motor</option>
+              <option value="Mobil">Mobil</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Tahun</label>
+            <input type="number" id="modal_k_tahun" placeholder="2023" min="1980" max="2035" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Odometer Sekarang (KM) *</label>
+          <input type="number" id="modal_k_odo" placeholder="12000" min="0" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Catatan Tambahan</label>
+          <input type="text" id="modal_k_catatan" placeholder="Unit operasional harian..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div class="pt-2 flex gap-2">
+          <button type="button" onclick="closeModal('modalKendaraan')" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold">
+            Batal
+          </button>
+          <button type="submit" id="btnSaveKendaraanModal" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/30">
+            Simpan Unit
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: QUICK UPDATE ODOMETER ==================== -->
+  <div id="modalQuickOdo" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 fade-in">
+    <div class="bg-white w-full max-w-sm rounded-[28px] p-5 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-sm font-bold text-slate-800">Perbarui Odometer</h3>
+        <button onclick="closeModal('modalQuickOdo')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
+          ✕
+        </button>
+      </div>
+
+      <form id="formQuickOdo" onsubmit="handleQuickOdoSubmit(event)" class="mt-4 space-y-3">
+        <input type="hidden" id="quick_odo_kid">
+        <div class="p-3 bg-purple-50 rounded-2xl border border-purple-100">
+          <p id="quick_odo_unit_name" class="text-xs font-bold text-indigo-950"></p>
+          <p id="quick_odo_current" class="text-[11px] text-indigo-600 font-medium mt-0.5"></p>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Kilometer Baru (KM) *</label>
+          <input type="number" id="quick_odo_val" required min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <!-- Increment Buttons -->
+        <div class="flex gap-1.5">
+          <button type="button" onclick="bumpOdo(10)" class="flex-1 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">+10 KM</button>
+          <button type="button" onclick="bumpOdo(50)" class="flex-1 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">+50 KM</button>
+          <button type="button" onclick="bumpOdo(100)" class="flex-1 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">+100 KM</button>
+        </div>
+
+        <div class="pt-2 flex gap-2">
+          <button type="button" onclick="closeModal('modalQuickOdo')" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold">
+            Batal
+          </button>
+          <button type="submit" id="btnSaveQuickOdo" class="flex-1 py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orangeDark text-white text-xs font-bold shadow-md shadow-orange-500/25">
+            Perbarui
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== CUSTOM CONFIRMATION DIALOG (No alert / confirm) ==================== -->
+  <div id="modalConfirm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 fade-in">
+    <div class="bg-white w-full max-w-xs rounded-[28px] p-5 shadow-2xl text-center">
+      <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+      </div>
+      <h3 id="confirmTitle" class="text-sm font-bold text-slate-900">Konfirmasi Hapus</h3>
+      <p id="confirmMessage" class="text-xs text-slate-500 mt-1 mb-4">Apakah Anda yakin ingin menghapus data ini?</p>
+      <div class="flex gap-2">
+        <button type="button" id="btnConfirmCancel" class="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50">
+          Batal
+        </button>
+        <button type="button" id="btnConfirmExecute" class="flex-1 py-2 rounded-xl bg-red-600 text-white text-xs font-bold shadow-md hover:bg-red-700">
+          Ya, Hapus
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: PESAN PENGINGAT (WHATSAPP & EMAIL) ==================== -->
+  <div id="modalMessage" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 fade-in">
+    <div class="bg-white w-full max-w-sm rounded-[28px] p-5 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center space-x-2">
+          <span class="text-lg">💬</span>
+          <h3 class="text-sm font-bold text-slate-800">Pesan Pengingat Servis</h3>
+        </div>
+        <button onclick="closeModal('modalMessage')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
+          ✕
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-3">
+        <p class="text-[11px] text-slate-500">Pratinjau draf pesan pengingat siap dikirim via WhatsApp atau disalin:</p>
+        
+        <textarea id="reminderMessageContent" rows="8" readonly class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-[11.5px] font-mono text-slate-800 leading-relaxed focus:outline-none"></textarea>
+
+        <!-- Aksi Kirim Pesan -->
+        <div class="space-y-2 pt-1">
+          <button type="button" onclick="sendViaWhatsApp()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 active:scale-98 transition">
+            <span>📲</span> Kirim via WhatsApp
+          </button>
+          
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="copyReminderMessage()" class="py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-xs font-bold flex items-center justify-center gap-1.5 transition">
+              <span>📋</span> Salin Teks
+            </button>
+            <button type="button" onclick="triggerEmailNotification()" class="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/25 flex items-center justify-center gap-1.5 active:scale-98 transition">
+              <span>✉️</span> Kirim Email
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastBox" class="fixed top-4 inset-x-4 max-w-sm mx-auto z-50 pointer-events-none flex flex-col gap-2"></div>
+
+  <!-- LOADING OVERLAY -->
+  <div id="globalLoader" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 hidden items-center justify-center">
+    <div class="bg-white px-5 py-4 rounded-2xl flex items-center gap-3 shadow-2xl">
+      <div class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-xs font-bold text-slate-700">Menyinkronkan data...</span>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // State Aplikasi
+    let APP_DATA = {
+      kendaraan: [],
+      logs: [],
+      reminders: [],
+      summary: {
+        totalKendaraan: 0,
+        totalOverdue: 0,
+        totalWarning: 0,
+        biayaBulanIni: 0
+      }
+    };
+
+    let selectedServiceTags = [];
+    let confirmCallback = null;
+    let activeMessageTargetId = null;
+    // Deteksi Lingkungan Google Apps Script
+    const IS_GAS = typeof google !== 'undefined' && google.script && typeof google.script.run !== 'undefined';
+
+    // Data Awal Mock untuk Browser Preview Mandiri
+    const SEED_STORAGE_KEY = 'MOTOCARE_LOCAL_DB_V1';
+
+    function initDefaultData() {
+      const today = new Date();
+      const past30 = new Date(today);
+      past30.setDate(past30.getDate() - 35);
+      const past60 = new Date(today);
+      past60.setDate(past60.getDate() - 65);
+
+      const next15 = new Date(today);
+      next15.setDate(next15.getDate() + 15);
+      const overdueDate = new Date(today);
+      overdueDate.setDate(overdueDate.getDate() - 5);
+
+      return {
+        kendaraan: [
+          {
+            id_kendaraan: 'KD-VARIO160',
+            no_polisi: 'B 1234 ABC',
+            nama_kendaraan: 'Honda Vario 160 ABS',
+            jenis: 'Motor',
+            tahun: 2023,
+            odometer_saat_ini: 14250,
+            catatan: 'Motor Operasional Harian',
+            created_at: '2025-01-10 10:00'
+          },
+          {
+            id_kendaraan: 'KD-AVANZA15',
+            no_polisi: 'D 5678 XYZ',
+            nama_kendaraan: 'Toyota Avanza 1.5G',
+            jenis: 'Mobil',
+            tahun: 2022,
+            odometer_saat_ini: 38400,
+            catatan: 'Mobil Keluarga',
+            created_at: '2025-01-15 14:00'
+          },
+          {
+            id_kendaraan: 'KD-NMAX155',
+            no_polisi: 'B 9999 OKE',
+            nama_kendaraan: 'Yamaha NMAX 155 Connected',
+            jenis: 'Motor',
+            tahun: 2024,
+            odometer_saat_ini: 8350,
+            catatan: 'Motor Touring',
+            created_at: '2025-02-01 09:30'
+          }
+        ],
+        logs: [
+          {
+            id_servis: 'SRV-001',
+            id_kendaraan: 'KD-VARIO160',
+            no_polisi: 'B 1234 ABC',
+            tanggal_servis: past60.toISOString().split('T')[0],
+            odometer_servis: 12000,
+            kategori_servis: 'Oli Mesin, Oli Gardan, Servis CVT',
+            rincian_servis: 'Oli MPX2 + pembersihan pulley roller CVT',
+            bengkel: 'AHASS Surya Sentosa',
+            biaya: 145000,
+            target_km_next: 14000, // Sekarang 14.250 -> OVERDUE 250 KM!
+            target_tgl_next: overdueDate.toISOString().split('T')[0],
+            created_at: past60.toISOString()
+          },
+          {
+            id_kendaraan: 'KD-AVANZA15',
+            id_servis: 'SRV-002',
+            no_polisi: 'D 5678 XYZ',
+            tanggal_servis: past30.toISOString().split('T')[0],
+            odometer_servis: 36000,
+            kategori_servis: 'Ganti Oli Mesin & Filter Oli',
+            rincian_servis: 'TMO 5W-30 Synthetic',
+            bengkel: 'Auto2000 Pasteur',
+            biaya: 480000,
+            target_km_next: 41000,
+            target_tgl_next: next15.toISOString().split('T')[0],
+            created_at: past30.toISOString()
+          }
+        ]
+      };
+    }
+
+    // Inisialisasi Saat Dokumen Siap
+    document.addEventListener('DOMContentLoaded', function() {
+      const now = new Date();
+      const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+      document.getElementById('currentDateLabel').textContent = now.toLocaleDateString('id-ID', options);
+      document.getElementById('srv_tanggal').value = now.toISOString().split('T')[0];
+
+      // Bind Konfirmasi Modal
+      document.getElementById('btnConfirmCancel').onclick = function() {
+        closeModal('modalConfirm');
+      };
+      document.getElementById('btnConfirmExecute').onclick = function() {
+        if (confirmCallback) confirmCallback();
+        closeModal('modalConfirm');
+      };
+
+      loadAllData();
+    });
+
+    // ==================== NAVIGASI & TAB ====================
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      const activePane = document.getElementById('tab-' + tabId);
+      if (activePane) activePane.classList.remove('hidden');
+
+      // Update Tab Bar Active State
+      document.querySelectorAll('.nav-button').forEach(btn => {
+        btn.classList.remove('text-brand-orange');
+        btn.classList.add('text-slate-400');
+      });
+
+      const currentNavBtn = document.getElementById('nav-btn-' + tabId);
+      if (currentNavBtn) {
+        currentNavBtn.classList.remove('text-slate-400');
+        currentNavBtn.classList.add('text-brand-orange');
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ==================== MODAL CONTROLLER ====================
+    function openModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    // Modal Konfirmasi Pengganti confirm()
+    function showConfirmDialog(title, message, onConfirm) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      confirmCallback = onConfirm;
+      openModal('modalConfirm');
+    }
+
+    // Toast Alert Pengganti alert()
+    function showToast(text, type = 'success') {
+      const box = document.getElementById('toastBox');
+      const toast = document.createElement('div');
+      const bg = type === 'error' ? 'bg-red-600' : 'bg-slate-900';
+      toast.className = `${bg} text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center justify-between pointer-events-auto fade-in`;
+      toast.innerHTML = `
+        <div class="flex items-center space-x-2">
+          <span>${type === 'error' ? '⚠️' : '✅'}</span>
+          <span>${text}</span>
+        </div>
+      `;
+      box.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    function toggleLoader(show) {
+      const el = document.getElementById('globalLoader');
+      if (show) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+      } else {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      }
+    }
+
+    // ==================== LOAD & REFRESH DATA ====================
+    function loadAllData() {
+      toggleLoader(true);
+
+      if (IS_GAS) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            toggleLoader(false);
+            if (res.success) {
+              APP_DATA = res.data;
+              renderApp();
+            } else {
+              showToast(res.error || 'Gagal memuat data dari spreadsheet.', 'error');
+            }
+          })
+          .withFailureHandler(function(err) {
+            toggleLoader(false);
+            showToast('Koneksi server gagal: ' + err.message, 'error');
+          })
+          .getAppData();
+      } else {
+        // Mode Standalone Preview (localStorage)
+        setTimeout(() => {
+          toggleLoader(false);
+          let saved = localStorage.getItem(SEED_STORAGE_KEY);
+          if (!saved) {
+            const initial = initDefaultData();
+            localStorage.setItem(SEED_STORAGE_KEY, JSON.stringify(initial));
+            saved = JSON.stringify(initial);
+          }
+          const parsed = JSON.parse(saved);
+          APP_DATA.kendaraan = parsed.kendaraan || [];
+          APP_DATA.logs = parsed.logs || [];
+          computeLocalReminders();
+          renderApp();
+        }, 200);
+      }
+    }
+
+    function refreshData() {
+      loadAllData();
+      showToast('Data berhasil diperbarui!');
+    }
+
+    // Komputasi Offline Status Kendaraan
+    function computeLocalReminders() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      APP_DATA.reminders = APP_DATA.kendaraan.map(k => {
+        const unitLogs = APP_DATA.logs.filter(l => l.id_kendaraan === k.id_kendaraan);
+        const lastLog = unitLogs.length > 0 ? unitLogs[0] : null;
+
+        let status = 'HEALTHY';
+        let statusText = 'Kondisi Aman';
+        let sisaKm = null;
+        let sisaHari = null;
+        let targetKm = 0;
+        let targetTgl = '';
+
+        if (!lastLog) {
+          status = 'NEW';
+          statusText = 'Belum Ada Servis';
+        } else {
+          targetKm = Number(lastLog.target_km_next) || 0;
+          targetTgl = lastLog.target_tgl_next || '';
+
+          if (targetKm > 0) {
+            sisaKm = targetKm - Number(k.odometer_saat_ini || 0);
+          }
+          if (targetTgl) {
+            const nextD = new Date(targetTgl);
+            nextD.setHours(0, 0, 0, 0);
+            sisaHari = Math.ceil((nextD - today) / (1000 * 60 * 60 * 24));
+          }
+
+          if ((sisaKm !== null && sisaKm <= 0) || (sisaHari !== null && sisaHari <= 0)) {
+            status = 'OVERDUE';
+            statusText = 'Jatuh Tempo (Perlu Servis)';
+          } else if ((sisaKm !== null && sisaKm <= 250) || (sisaHari !== null && sisaHari <= 7)) {
+            status = 'WARNING';
+            statusText = 'Segera Servis';
+          }
+        }
+
+        return {
+          id_kendaraan: k.id_kendaraan,
+          no_polisi: k.no_polisi,
+          nama_kendaraan: k.nama_kendaraan,
+          jenis: k.jenis,
+          odometer_saat_ini: k.odometer_saat_ini,
+          last_service_date: lastLog ? lastLog.tanggal_servis : '-',
+          target_km: targetKm,
+          target_tgl: targetTgl,
+          sisa_km: sisaKm,
+          sisa_hari: sisaHari,
+          status: status,
+          status_text: statusText
+        };
+      });
+
+      // Hitung ringkasan
+      let overdue = 0, warning = 0;
+      APP_DATA.reminders.forEach(r => {
+        if (r.status === 'OVERDUE') overdue++;
+        if (r.status === 'WARNING') warning++;
+      });
+
+      let monthlyTotal = 0;
+      const now = new Date();
+      APP_DATA.logs.forEach(l => {
+        if (l.tanggal_servis) {
+          const d = new Date(l.tanggal_servis);
+          if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+            monthlyTotal += Number(l.biaya || 0);
+          }
+        }
+      });
+
+      APP_DATA.summary = {
+        totalKendaraan: APP_DATA.kendaraan.length,
+        totalOverdue: overdue,
+        totalWarning: warning,
+        biayaBulanIni: monthlyTotal
+      };
+    }
+
+    // ==================== RENDER TAMPILAN ====================
+    function renderApp() {
+      renderSummaryCards();
+      renderFeaturedCard();
+      renderMonitoringWatchlist();
+      renderGarageCards();
+      populateDropdowns();
+      renderHistoryList();
+    }
+
+    function renderSummaryCards() {
+      const s = APP_DATA.summary || {};
+      const elMonthly = document.getElementById('statMonthlyExpense');
+      const elAttention = document.getElementById('statAttentionCount');
+      const elVehicle = document.getElementById('vehicleCountBadge');
+
+      if (elMonthly) elMonthly.textContent = 'Rp ' + Number(s.biayaBulanIni || 0).toLocaleString('id-ID');
+      if (elAttention) elAttention.textContent = ((s.totalOverdue || 0) + (s.totalWarning || 0)) + ' Unit';
+      if (elVehicle) elVehicle.textContent = (s.totalKendaraan || 0) + ' unit';
+    }
+
+    function renderFeaturedCard() {
+      const card = document.getElementById('featuredAlertCard');
+      const title = document.getElementById('featuredTitle');
+      const subtitle = document.getElementById('featuredSubtitle');
+      const dateNote = document.getElementById('featuredDateNote');
+      const kmNote = document.getElementById('featuredKmNote');
+
+      const urgentUnit = (APP_DATA.reminders || []).find(r => r.status === 'OVERDUE') ||
+                         (APP_DATA.reminders || []).find(r => r.status === 'WARNING');
+
+      if (urgentUnit) {
+        card.classList.remove('bg-emerald-600');
+        card.classList.add('bg-brand-orange');
+        title.textContent = `${urgentUnit.nama_kendaraan} (${urgentUnit.no_polisi})`;
+
+        if (urgentUnit.status === 'OVERDUE') {
+          subtitle.textContent = urgentUnit.sisa_km !== null && urgentUnit.sisa_km <= 0 
+            ? `Sudah melewati batas target servis sebesar ${Math.abs(urgentUnit.sisa_km)} KM!`
+            : `Sudah jatuh tempo tanggal servis! Segera ke bengkel.`;
+        } else {
+          subtitle.textContent = `Mendekati jadwal servis berkala. Sisa jarak sekitar ${urgentUnit.sisa_km || 0} KM.`;
+        }
+
+        dateNote.textContent = urgentUnit.target_tgl ? `Batas: ${urgentUnit.target_tgl}` : 'Periksa Odometer';
+        kmNote.textContent = `Saat ini: ${Number(urgentUnit.odometer_saat_ini).toLocaleString('id-ID')} KM`;
+      } else {
+        // Tampilan Aman
+        card.classList.remove('bg-brand-orange');
+        card.classList.add('bg-emerald-600');
+        title.textContent = 'Kondisi Armada Prima';
+        subtitle.textContent = 'Seluruh motor dan mobil berada dalam rentang servis aman.';
+        dateNote.textContent = 'Status: Terawat Baik';
+        kmNote.textContent = `${APP_DATA.kendaraan.length} Kendaraan Terdaftar`;
+      }
+    }
+
+    // Render Watchlist dengan Circular Progress Ring (Persis gambar referensi)
+    function renderMonitoringWatchlist() {
+      const container = document.getElementById('monitoringList');
+      const list = APP_DATA.reminders || [];
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-5 text-center text-slate-400 text-xs">
+            Belum ada kendaraan di garasi. Tekan tombol <b class="text-indigo-600">+</b> di atas untuk menambahkan.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(item => {
+        let strokeColor = '#10B981'; // Green
+        let percent = 80;
+        let ringIcon = 'check';
+
+        if (item.status === 'OVERDUE') {
+          strokeColor = '#EF4444'; // Red
+          percent = 100;
+          ringIcon = 'exclamation';
+        } else if (item.status === 'WARNING') {
+          strokeColor = '#F59E0B'; // Orange / Amber
+          percent = 45;
+          ringIcon = 'bell';
+        } else if (item.status === 'NEW') {
+          strokeColor = '#0EA5E9'; // Sky
+          percent = 15;
+          ringIcon = 'sparkle';
+        }
+
+        // Hitung stroke offset untuk radius 14 (keliling ~ 88)
+        const radius = 14;
+        const circumference = 2 * Math.PI * radius;
+        const strokeDashoffset = circumference - (percent / 100) * circumference;
+
+        let statusDesc = 'Aman & Terawat';
+        if (item.status === 'OVERDUE') {
+          statusDesc = item.sisa_km <= 0 ? `Lewat ${Math.abs(item.sisa_km)} KM` : 'Jatuh Tempo';
+        } else if (item.status === 'WARNING') {
+          statusDesc = `Sisa ${item.sisa_km} KM lagi`;
+        } else if (item.status === 'NEW') {
+          statusDesc = 'Belum pernah servis';
+        }
+
+        return `
+          <div class="bg-white rounded-2xl p-3.5 flex items-center justify-between shadow-sm hover:shadow-md transition">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-extrabold text-xs">
+                ${item.jenis === 'Mobil' ? '🚗' : '🛵'}
+              </div>
+              <div>
+                <h3 class="text-xs font-bold text-slate-900 leading-tight">${escapeHtml(item.nama_kendaraan)}</h3>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">${escapeHtml(item.no_polisi)}</span>
+                  <span class="text-[10px] text-slate-400">• ${Number(item.odometer_saat_ini).toLocaleString('id-ID')} KM</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bagian Kanan: Tombol Pesan, Indikator Progress Ring & Update KM -->
+            <div class="flex items-center space-x-2">
+              <div class="text-right">
+                <span class="text-[10px] font-bold block" style="color: ${strokeColor}">
+                  ${item.status === 'OVERDUE' ? 'Jatuh Tempo' : item.status === 'WARNING' ? 'Segera Servis' : 'Kondisi Baik'}
+                </span>
+                <span class="text-[9px] text-slate-400">${statusDesc}</span>
+              </div>
+
+              <!-- Tombol Pesan Pengingat -->
+              <button onclick="openMessageModal('${item.id_kendaraan}')" class="w-8 h-8 rounded-full bg-slate-50 hover:bg-orange-50 text-slate-500 hover:text-brand-orange border border-slate-100 flex items-center justify-center transition active:scale-95" title="Kirim Pesan Pengingat">
+                💬
+              </button>
+
+              <!-- SVG Circular Progress Arc -->
+              <div class="relative w-8 h-8 flex items-center justify-center cursor-pointer" onclick="openQuickOdoModal('${item.id_kendaraan}', '${escapeHtml(item.no_polisi)}', ${item.odometer_saat_ini})" title="Klik untuk Update KM">
+                <svg class="w-8 h-8 transform -rotate-90" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="${radius}" stroke="#E2E8F0" stroke-width="3" fill="none" />
+                  <circle cx="18" cy="18" r="${radius}" stroke="${strokeColor}" stroke-width="3.5"
+                    stroke-dasharray="${circumference}" stroke-dashoffset="${strokeDashoffset}" stroke-linecap="round" fill="none" />
+                </svg>
+                <span class="absolute text-[8px] font-bold text-slate-700">KM</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render Garasi Kendaraan
+    function renderGarageCards() {
+      const container = document.getElementById('garageList');
+      const list = APP_DATA.kendaraan || [];
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-3xl p-6 text-center text-slate-400 text-xs">
+            Belum ada kendaraan terdaftar.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(k => `
+        <div class="bg-white rounded-3xl p-4 shadow-sm space-y-3">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-xl">
+                ${k.jenis === 'Mobil' ? '🚗' : '🛵'}
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">${escapeHtml(k.nama_kendaraan)}</h3>
+                <p class="text-xs font-extrabold text-indigo-600 mt-0.5">${escapeHtml(k.no_polisi)} <span class="text-slate-400 font-medium">(${k.tahun || '-'})</span></p>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">${k.jenis}</span>
+          </div>
+
+          <div class="p-2.5 bg-slate-50 rounded-2xl flex items-center justify-between text-xs">
+            <span class="text-slate-500 font-medium">Odometer Terkini:</span>
+            <span class="font-extrabold text-slate-900">${Number(k.odometer_saat_ini).toLocaleString('id-ID')} KM</span>
+          </div>
+
+          ${k.catatan ? `<p class="text-[11px] text-slate-400 italic">“${escapeHtml(k.catatan)}”</p>` : ''}
+
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+            <div class="flex space-x-1.5">
+              <button onclick="openQuickOdoModal('${k.id_kendaraan}', '${escapeHtml(k.no_polisi)}', ${k.odometer_saat_ini})" class="px-3 py-1.5 rounded-xl bg-orange-50 text-brand-orange text-xs font-bold hover:bg-orange-100 transition">
+                ⚡ Update KM
+              </button>
+              <button onclick="openMessageModal('${k.id_kendaraan}')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition" title="Kirim Pesan Pengingat">
+                💬 Pesan
+              </button>
+            </div>
+            <div class="flex space-x-1.5">
+              <button onclick="openEditKendaraanModal('${k.id_kendaraan}')" class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition">
+                Edit
+              </button>
+              <button onclick="requestDeleteKendaraan('${k.id_kendaraan}', '${escapeHtml(k.no_polisi)}')" class="px-3 py-1.5 rounded-xl bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 transition">
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Dropdown Kendaraan untuk Form Servis & Filter Riwayat
+    function populateDropdowns() {
+      const selServis = document.getElementById('srv_kendaraan');
+      const selFilter = document.getElementById('filterLogVehicle');
+      const list = APP_DATA.kendaraan || [];
+
+      let opts = '<option value="">-- Pilih Unit --</option>';
+      let filterOpts = '<option value="ALL">Semua Unit</option>';
+
+      list.forEach(k => {
+        const label = `${escapeHtml(k.no_polisi)} - ${escapeHtml(k.nama_kendaraan)}`;
+        opts += `<option value="${k.id_kendaraan}">${label}</option>`;
+        filterOpts += `<option value="${k.id_kendaraan}">${label}</option>`;
+      });
+
+      if (selServis) selServis.innerHTML = opts;
+      if (selFilter) selFilter.innerHTML = filterOpts;
+    }
+
+    // Render Riwayat Servis
+    function renderHistoryList() {
+      const container = document.getElementById('historyList');
+      if (!container) return;
+
+      const selFilter = document.getElementById('filterLogVehicle');
+      const filterId = selFilter ? selFilter.value : 'ALL';
+      const searchInput = document.getElementById('searchLogInput');
+      const searchTxt = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+      let logs = APP_DATA.logs || [];
+
+      if (filterId !== 'ALL') {
+        logs = logs.filter(l => l.id_kendaraan === filterId);
+      }
+
+      if (searchTxt) {
+        logs = logs.filter(l =>
+          (l.no_polisi && l.no_polisi.toLowerCase().includes(searchTxt)) ||
+          (l.bengkel && l.bengkel.toLowerCase().includes(searchTxt)) ||
+          (l.kategori_servis && l.kategori_servis.toLowerCase().includes(searchTxt)) ||
+          (l.rincian_servis && l.rincian_servis.toLowerCase().includes(searchTxt))
+        );
+      }
+
+      if (logs.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-3xl p-6 text-center text-slate-400 text-xs shadow-sm">
+            Belum ada riwayat servis yang sesuai.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = logs.map(l => `
+        <div class="bg-white rounded-3xl p-4 shadow-sm hover:shadow-md transition space-y-3">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg">${escapeHtml(l.no_polisi)}</span>
+                <span class="text-[11px] font-bold text-slate-400">${l.tanggal_servis || '-'}</span>
+              </div>
+              <h4 class="text-xs font-bold text-slate-900 mt-1.5">${escapeHtml(l.kategori_servis || 'Servis Berkala')}</h4>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-extrabold text-slate-900 block">Rp ${Number(l.biaya || 0).toLocaleString('id-ID')}</span>
+              <span class="text-[10px] text-slate-400">${Number(l.odometer_servis || 0).toLocaleString('id-ID')} KM</span>
+            </div>
+          </div>
+
+          ${l.rincian_servis ? `<p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-xl">${escapeHtml(l.rincian_servis)}</p>` : ''}
+
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span class="text-slate-400 font-medium">📍 ${escapeHtml(l.bengkel || 'Bengkel Umum')}</span>
+            <div class="flex items-center gap-2">
+              ${l.target_km_next ? `<span class="text-indigo-600 font-semibold">Target: ${Number(l.target_km_next).toLocaleString('id-ID')} KM</span>` : ''}
+              <button onclick="requestDeleteLog('${l.id_servis}')" class="p-1 rounded-lg text-red-500 hover:bg-red-50 transition" title="Hapus Riwayat">
+                🗑️
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ==================== FITUR PESAN PENGINGAT (WHATSAPP / EMAIL) ====================
+    function openMessageModal(idKendaraan) {
+      activeMessageTargetId = idKendaraan;
+      const targetVehicle = APP_DATA.kendaraan.find(k => k.id_kendaraan === idKendaraan);
+      if (!targetVehicle) return;
+
+      if (IS_GAS) {
+        toggleLoader(true);
+        google.script.run
+          .withSuccessHandler(function(res) {
+            toggleLoader(false);
+            if (res.success) {
+              document.getElementById('reminderMessageContent').value = res.data.messageText;
+              openModal('modalMessage');
+            } else {
+              showToast(res.error || 'Gagal memuat format pesan.', 'error');
+            }
+          })
+          .withFailureHandler(function(err) {
+            toggleLoader(false);
+            showToast('Koneksi server gagal: ' + err.message, 'error');
+          })
+          .generateReminderMessage(idKendaraan);
+      } else {
+        // Mode Browser Standalone: Format Pesan Lokal
+        const reminder = APP_DATA.reminders.find(r => r.id_kendaraan === idKendaraan);
+        const statusText = reminder && reminder.status === 'OVERDUE' ? '🚨 *JATUH TEMPO (PERLU SERVIS)*' : 
+                           (reminder && reminder.status === 'WARNING' ? '⚠️ *MENDEKATI JADWAL SERVIS*' : '🟢 *Kondisi Terawat*');
+        
+        let kmInfo = reminder && reminder.target_km ? `${reminder.target_km.toLocaleString('id-ID')} KM (Sisa ${reminder.sisa_km || 0} KM)` : '-';
+        let tglInfo = reminder && reminder.target_tgl ? reminder.target_tgl : '-';
+
+        const text = 
+          '🔔 *PENGINGAT SERVIS KENDARAAN - MOTOCARE*\n' +
+          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+          statusText + '\n\n' +
+          '🛵 *Unit:* ' + targetVehicle.nama_kendaraan + ' (' + targetVehicle.jenis + ')\n' +
+          '🔢 *No. Polisi:* ' + targetVehicle.no_polisi + '\n' +
+          '📈 *Odometer Saat Ini:* ' + Number(targetVehicle.odometer_saat_ini).toLocaleString('id-ID') + ' KM\n\n' +
+          '🎯 *Batas Target Servis:*\n' +
+          '• Target Odometer : ' + kmInfo + '\n' +
+          '• Target Tanggal  : ' + tglInfo + '\n\n' +
+          '🔧 *Rekomendasi Tindakan:*\n' +
+          'Lakukan penggantian oli mesin/transmisi berkala, pengecekan kampas rem dan tune-up agar performa kendaraan tetap prima dan aman digunakan.\n' +
+          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+          '_Pesan otomatis dari MotoCare Record Kendaraan_';
+
+        document.getElementById('reminderMessageContent').value = text;
+        openModal('modalMessage');
+      }
+    }
+
+    function openMessageModalCurrentUrgent() {
+      const urgent = (APP_DATA.reminders || []).find(r => r.status === 'OVERDUE') ||
+                     (APP_DATA.reminders || []).find(r => r.status === 'WARNING');
+      if (urgent) {
+        openMessageModal(urgent.id_kendaraan);
+      } else if (APP_DATA.kendaraan.length > 0) {
+        openMessageModal(APP_DATA.kendaraan[0].id_kendaraan);
+      } else {
+        showToast('Belum ada kendaraan terdaftar.', 'error');
+      }
+    }
+
+    function sendViaWhatsApp() {
+      const text = document.getElementById('reminderMessageContent').value;
+      if (!text) return;
+      const url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(text);
+      window.open(url, '_blank');
+      showToast('Membuka WhatsApp...');
+    }
+
+    function copyReminderMessage() {
+      const textarea = document.getElementById('reminderMessageContent');
+      textarea.select();
+      textarea.setSelectionRange(0, 99999);
+      try {
+        const success = document.execCommand('copy');
+        if (success) {
+          showToast('Teks pesan berhasil disalin ke clipboard!');
+        } else {
+          showToast('Gagal menyalin secara otomatis.', 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menyalin teks.', 'error');
+      }
+    }
+
+    function triggerEmailNotification() {
+      if (!activeMessageTargetId) return;
+
+      if (IS_GAS) {
+        toggleLoader(true);
+        google.script.run
+          .withSuccessHandler(function(res) {
+            toggleLoader(false);
+            if (res.success) {
+              showToast(res.message);
+              closeModal('modalMessage');
+            } else {
+              showToast(res.error, 'error');
+            }
+          })
+          .withFailureHandler(function(err) {
+            toggleLoader(false);
+            showToast('Pengiriman email gagal: ' + err.message, 'error');
+          })
+          .sendReminderEmail(activeMessageTargetId);
+      } else {
+        showToast('Simulasi: Email pengingat servis berhasil dikirimkan!');
+        closeModal('modalMessage');
+      }
+    }
+
+    // ==================== KENDARAAN FORM HANDLERS ====================
+    function openKendaraanModal() {
+      document.getElementById('modalKendaraanTitle').textContent = 'Tambah Kendaraan Baru';
+      document.getElementById('formKendaraanModal').reset();
+      document.getElementById('modal_k_id').value = '';
+      openModal('modalKendaraan');
+    }
+
+    function openEditKendaraanModal(id) {
+      const k = APP_DATA.kendaraan.find(x => x.id_kendaraan === id);
+      if (!k) return;
+      document.getElementById('modalKendaraanTitle').textContent = 'Edit Data Unit';
+      document.getElementById('modal_k_id').value = k.id_kendaraan;
+      document.getElementById('modal_k_nopol').value = k.no_polisi;
+      document.getElementById('modal_k_nama').value = k.nama_kendaraan;
+      document.getElementById('modal_k_jenis').value = k.jenis;
+      document.getElementById('modal_k_tahun').value = k.tahun || '';
+      document.getElementById('modal_k_odo').value = k.odometer_saat_ini;
+      document.getElementById('modal_k_catatan').value = k.catatan || '';
+      openModal('modalKendaraan');
+    }
+
+    function handleSaveKendaraanModal(e) {
+      e.preventDefault();
+      const id = document.getElementById('modal_k_id').value;
+      const payload = {
+        id_kendaraan: id,
+        no_polisi: document.getElementById('modal_k_nopol').value.trim().toUpperCase(),
+        nama_kendaraan: document.getElementById('modal_k_nama').value.trim(),
+        jenis: document.getElementById('modal_k_jenis').value,
+        tahun: Number(document.getElementById('modal_k_tahun').value) || new Date().getFullYear(),
+        odometer_saat_ini: Number(document.getElementById('modal_k_odo').value) || 0,
+        catatan: document.getElementById('modal_k_catatan').value.trim()
+      };
+
+      toggleLoader(true);
+
+      if (IS_GAS) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            toggleLoader(false);
+            if (res.success) {
+              closeModal('modalKendaraan');
+              showToast(res.message);
+              loadAllData();
+            } else {
+              showToast(res.error, 'error');
+            }
+          })
+          .withFailureHandler(function(err) {
+            toggleLoader(false);
+            showToast(err.message, 'error');
+          })
+          .saveKendaraan(payload);
+      } else {
+        // Simpan Lokal
+        setTimeout(() => {
+          toggleLoader(false);
+          let store = JSON.parse(localStorage.getItem(SEED_STORAGE_KEY));
+          if (id) {
+            const idx = store.kendaraan.findIndex(x => x.id_kendaraan === id);
+            if (idx > -1) store.kendaraan[idx] = Object.assign(store.kendaraan[idx], payload);
+          } else {
+            payload.id_kendaraan = 'KD-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+            store.kendaraan.unshift(payload);
+          }
+          localStorage.setItem(SEED_STORAGE_KEY, JSON.stringify(store));
+          closeModal('modalKendaraan');
+          showToast('Kendaraan berhasil disimpan!');
+          loadAllData();
+        }, 150);
+      }
+    }
+
+    function requestDeleteKendaraan(id, nopol) {
+      showConfirmDialog(
+        'Hapus Kendaraan?',
+        `Data ${nopol} beserta seluruh riwayat servisnya akan dihapus permanen.`,
+        function() {
+          toggleLoader(true);
+          if (IS_GAS) {
+            google.script.run
+              .withSuccessHandler(function(res) {
+                toggleLoader(false);
+                if (res.success) {
+                  showToast(res.message);
+                  loadAllData();
+                } else {
+                  showToast(res.error, 'error');
+                }
+              })
+              .withFailureHandler(function(err) {
+                toggleLoader(false);
+                showToast(err.message, 'error');
+              })
+              .deleteKendaraan(id);
+          } else {
+            let store = JSON.parse(localStorage.getItem(SEED_STORAGE_KEY));
+            store.kendaraan = store.kendaraan.filter(k => k.id_kendaraan !== id);
+            store.logs = store.logs.filter(l => l.id_kendaraan !== id);
+            localStorage.setItem(SEED_STORAGE_KEY, JSON.stringify(store));
+            toggleLoader(false);
+            showToast('Kendaraan berhasil dihapus.');
+            loadAllData();
+          }
+        }
+      );
+    }
+
+    // ==================== QUICK ODOMETER HANDLERS ====================
+    function openQuickOdoSelector() {
+      if (APP_DATA.kendaraan.length === 0) {
+        showToast('Tambahkan kendaraan terlebih dahulu!', 'error');
+        return;
+      }
+      const first = APP_DATA.kendaraan[0];
+      openQuickOdoModal(first.id_kendaraan, first.no_polisi, first.odometer_saat_ini);
+    }
+
+    function openQuickOdoModal(id, nopol, currentKm) {
+      document.getElementById('quick_odo_kid').value = id;
+      document.getElementById('quick_odo_unit_name').textContent = `Unit: ${nopol}`;
+      document.getElementById('quick_odo_current').textContent = `KM Terakhir: ${Number(currentKm).toLocaleString('id-ID')} KM`;
+      document.getElementById('quick_odo_val').value = currentKm;
+      document.getElementById('quick_odo_val').min = currentKm;
+      openModal('modalQuickOdo');
+    }
+
+    function bumpOdo(amount) {
+      const input = document.getElementById('quick_odo_val');
+      input.value = (Number(input.value) || 0) + amount;
+    }
+
+    function handleQuickOdoSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('quick_odo_kid').value;
+      const newOdo = Number(document.getElementById('quick_odo_val').value) || 0;
+
+      toggleLoader(true);
+
+      if (IS_GAS) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            toggleLoader(false);
+            if (res.success) {
+              closeModal('modalQuickOdo');
+              showToast(res.message);
+              loadAllData();
+            } else {
+              showToast(res.error, 'error');
+            }
+          })
+          .withFailureHandler(function(err) {
+            toggleLoader(false);
+            showToast(err.message, 'error');
+          })
+          .updateOdometer(id, newOdo);
+      } else {
+        setTimeout(() => {
+          toggleLoader(false);
+          let store = JSON.parse(localStorage.getItem(SEED_STORAGE_KEY));
+          const unit = store.kendaraan.find(k => k.id_kendaraan === id);
+          if (unit) {
+            unit.odometer_saat_ini = newOdo;
+            localStorage.setItem(SEED_STORAGE_KEY, JSON.stringify(store));
+            closeModal('modalQuickOdo');
+            showToast(`Odometer diperbarui menjadi ${newOdo.toLocaleString('id-ID')} KM`);
+            loadAllData();
+          }
+        }, 150);
+      }
+    }
+
+    // ==================== SERVICE FORM HANDLERS ====================
+    function toggleTag(btn, name) {
+      const idx = selectedServiceTags.indexOf(name);
+      if (idx > -1) {
+        selectedServiceTags.splice(idx, 1);
+        btn.classList.remove('bg-indigo-600', 'text-white');
+        btn.classList.add('bg-slate-100', 'text-slate-600');
+      } else {
+        selectedServiceTags.push(name);
+        btn.classList.add('bg-indigo-600', 'text-white');
+        btn.classList.remove('bg-slate-100', 'text-slate-600');
+      }
+      document.getElementById('srv_kategori').value = selectedServiceTags.join(', ');
+    }
+
+    function onServiceVehicleSelected() {
+      const id = document.getElementById('srv_kendaraan').value;
+      const k = APP_DATA.kendaraan.find(x => x.id_kendaraan === id);
+      if (k) {
+        document.getElementById('srv_odometer').value = k.odometer_saat_ini;
+        autoCalculateTargets();
+      }
+    }
+
+    function autoCalculateTargets() {
+      const curKm = Number(document.getElementById('srv_odometer').value) || 0;
+      if (curKm > 0 && !document.getElementById('srv_target_km').value) {
+        document.getElementById('srv_target_km').value = curKm + 2500;
+      }
+      if (!document.getElementById('srv_target_tgl').value) {
+        const d = new Date();
+        d.setDate(d.getDate() + 60);
+        document.getElementById('srv_target_tgl').value = d.toISOString().split('T')[0];
+      }
+    }
+
+    function addKmQuick(km) {
+      const base = Number(document.getElementById('srv_odometer').value) || 0;
+      document.getElementById('srv_target_km').value = base + km;
+    }
+
+    function addDaysQuick(days) {
+      const baseD = new Date(document.getElementById('srv_tanggal').value || new Date());
+      baseD.setDate(baseD.getDate() + days);
+      document.getElementById('srv_target_tgl').value = baseD.toISOString().split('T')[0];
+    }
+
+    function resetServiceForm() {
+      selectedServiceTags = [];
+      document.querySelectorAll('#serviceTagList button').forEach(b => {
+        b.classList.remove('bg-indigo-600', 'text-white');
+        b.classList.add('bg-slate-100', 'text-slate-600');
+      });
+      document.getElementById('formService').reset();
+      document.getElementById('srv_tanggal').value = new Date().toISOString().split('T')[0];
+    }
+
+    function handleSaveService(e) {
+      e.preventDefault();
+      const payload = {
+        id_kendaraan: document.getElementById('srv_kendaraan').value,
+        tanggal_servis: document.getElementById('srv_tanggal').value,
+        odometer_servis: Number(document.getElementById('srv_odometer').value) || 0,
+        kategori_servis: document.getElementById('srv_kategori').value || 'Servis Berkala',
+        biaya: Number(document.getElementById('srv_biaya').value) || 0,
+        bengkel: document.getElementById('srv_bengkel').value.trim(),
+        rincian_servis: document.getElementById('srv_rincian').value.trim(),
+        target_km_next: Number(document.getElementById('srv_target_km').value) || 0,
+        target_tgl_next: document.getElementById('srv_target_tgl').value
+      };
+
+      toggleLoader(true);
+
+      if (IS_GAS) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            toggleLoader(false);
+            if (res.success) {
+              showToast(res.message);
+              resetServiceForm();
+              loadAllData();
+              switchTab('dashboard');
+            } else {
+              showToast(res.error, 'error');
+            }
+          })
+          .withFailureHandler(function(err) {
+            toggleLoader(false);
+            showToast(err.message, 'error');
+          })
+          .saveLogServis(payload);
+      } else {
+        setTimeout(() => {
+          toggleLoader(false);
+          let store = JSON.parse(localStorage.getItem(SEED_STORAGE_KEY));
+          const unit = store.kendaraan.find(k => k.id_kendaraan === payload.id_kendaraan);
+          if (unit) {
+            payload.no_polisi = unit.no_polisi;
+            if (payload.odometer_servis > unit.odometer_saat_ini) {
+              unit.odometer_saat_ini = payload.odometer_servis;
+            }
+          }
+          payload.id_servis = 'SRV-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+          payload.created_at = new Date().toISOString();
+          store.logs.unshift(payload);
+          localStorage.setItem(SEED_STORAGE_KEY, JSON.stringify(store));
+
+          showToast('Riwayat servis berhasil dicatat!');
+          resetServiceForm();
+          loadAllData();
+          switchTab('dashboard');
+        }, 150);
+      }
+    }
+
+    function requestDeleteLog(id) {
+      showConfirmDialog('Hapus Catatan Servis?', 'Entri nota servis ini akan dihapus dari histori.', function() {
+        toggleLoader(true);
+        if (IS_GAS) {
+          google.script.run
+            .withSuccessHandler(function(res) {
+              toggleLoader(false);
+              if (res.success) {
+                showToast(res.message);
+                loadAllData();
+              } else {
+                showToast(res.error, 'error');
+              }
+            })
+            .withFailureHandler(function(err) {
+              toggleLoader(false);
+              showToast(err.message, 'error');
+            })
+            .deleteLogServis(id);
+        } else {
+          let store = JSON.parse(localStorage.getItem(SEED_STORAGE_KEY));
+          store.logs = store.logs.filter(l => l.id_servis !== id);
+          localStorage.setItem(SEED_STORAGE_KEY, JSON.stringify(store));
+          toggleLoader(false);
+          showToast('Riwayat servis dihapus.');
+          loadAllData();
+        }
+      });
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
