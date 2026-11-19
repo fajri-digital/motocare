@@ -67,6 +67,19 @@
 
   <!-- ==================== 1. AUTH SCREEN (LOGIN & DAFTAR PENGGUNA BARU) ==================== -->
   <section id="authScreen" class="max-w-md mx-auto min-h-screen flex flex-col justify-center px-5 py-8 fade-in">
+    <!-- Banner Peringatan Jika URL API Apps Script Belum Diatur -->
+    <div id="apiSetupBanner" class="hidden mb-4 bg-amber-50 border border-amber-300 text-amber-900 rounded-2xl p-3.5 text-xs shadow-lg space-y-2">
+      <div class="font-extrabold flex items-center gap-1.5">
+        <span>⚠️</span> URL Google Apps Script Belum Terhubung
+      </div>
+      <p class="text-[11px] leading-relaxed text-amber-800">
+        Agar data masuk ke Google Spreadsheet dari Vercel, tempelkan <b>Web App URL (/exec)</b> Anda di bawah ini atau ubah variabel <code>DEFAULT_GAS_API_URL</code> pada <code>index.html</code>.
+      </p>
+      <button type="button" onclick="openApiConfigModal()" class="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-extrabold transition">
+        ⚙️ Atur URL Web App Spreadsheet
+      </button>
+    </div>
+
     <div class="bg-white/95 backdrop-blur-xl rounded-[32px] p-6 sm:p-7 shadow-2xl border border-white/60 space-y-5">
       <!-- Logo Brand Resmi -->
       <div class="flex flex-col items-center text-center">
@@ -203,12 +216,14 @@
         </p>
       </form>
 
-      <!-- Footer Keamanan -->
+      <!-- Footer Keamanan & Pengaturan API -->
       <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
         <span class="flex items-center gap-1 font-semibold text-emerald-600">
-          <span>🔒</span> Data Pribadi Terisolasi
+          <span>🔒</span> Google Sheets Sync
         </span>
-        <span>Enkripsi SHA-256</span>
+        <button type="button" onclick="openApiConfigModal()" class="font-bold text-indigo-600 hover:underline">
+          ⚙️ URL API
+        </button>
       </div>
     </div>
   </section>
@@ -594,6 +609,27 @@
     </nav>
   </div>
 
+  <!-- ==================== MODAL: KONFIGURASI URL GOOGLE APPS SCRIPT ==================== -->
+  <div id="modalApiConfig" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 fade-in">
+    <div class="bg-white w-full max-w-sm rounded-[28px] p-5 shadow-2xl relative space-y-3.5">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-sm font-bold text-slate-800">⚙️ Koneksi Google Spreadsheet</h3>
+        <button onclick="closeModal('modalApiConfig')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">✕</button>
+      </div>
+      <p class="text-[11px] text-slate-500 leading-relaxed">
+        Masukkan <b>Web App URL</b> dari hasil Deploy Google Apps Script Anda (berawalan <code>https://script.google.com/macros/s/</code> dan berakhiran <code>/exec</code>).
+      </p>
+      <div>
+        <label class="block text-[11px] font-bold text-slate-700 mb-1">Web App URL (/exec) *</label>
+        <input type="url" id="cfg_gas_url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button type="button" onclick="closeModal('modalApiConfig')" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold">Batal</button>
+        <button type="button" onclick="saveGasUrlConfig()" class="flex-1 py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orangeDark text-white text-xs font-bold shadow-md">Simpan URL</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== MODAL: LUPA KATA SANDI (OTP VIA EMAIL) ==================== -->
   <div id="modalForgotPassword" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 fade-in">
     <div class="bg-white w-full max-w-sm rounded-[28px] p-5 shadow-2xl relative space-y-4">
@@ -602,7 +638,6 @@
         <button onclick="closeModal('modalForgotPassword')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">✕</button>
       </div>
 
-      <!-- Step 1: Request OTP -->
       <div id="fpStep1" class="space-y-3">
         <p class="text-xs text-slate-500">Masukkan <b>Username</b> atau <b>Email terdaftar</b> Anda. Kode OTP 6-digit akan dikirimkan ke email tersebut.</p>
         <div>
@@ -614,7 +649,6 @@
         </button>
       </div>
 
-      <!-- Step 2: Verify OTP & Set New Password -->
       <div id="fpStep2" class="hidden space-y-3">
         <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-[11px] text-emerald-800">
           Kode OTP telah dikirim ke <b id="fp_sent_to">email Anda</b>. Berlaku 15 menit.
@@ -648,10 +682,9 @@
           <p id="profileFullName" class="text-sm font-extrabold text-indigo-950">-</p>
           <p id="profileUsername" class="text-xs text-indigo-600 font-medium">@username</p>
         </div>
-        <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white">AKUN AKTIF</span>
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white">TERHUBUNG</span>
       </div>
 
-      <!-- Ubah Nama & Email -->
       <form id="formUpdateProfile" onsubmit="handleUpdateProfileSubmit(event)" class="space-y-2.5 border-t border-slate-100 pt-3">
         <p class="text-xs font-bold text-slate-700">✏️ Ubah Informasi Profil</p>
         <div>
@@ -667,7 +700,6 @@
         </button>
       </form>
 
-      <!-- Ubah Kata Sandi -->
       <form id="formChangePassword" onsubmit="handleChangePasswordSubmit(event)" class="space-y-2.5 border-t border-slate-100 pt-3">
         <p class="text-xs font-bold text-slate-700">🔒 Ubah Kata Sandi</p>
         <input type="password" id="cp_old" required placeholder="Kata sandi saat ini" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -677,9 +709,12 @@
         </button>
       </form>
 
-      <div class="pt-2 border-t border-slate-100">
-        <button type="button" onclick="handleLogout()" class="w-full py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-extrabold transition flex items-center justify-center gap-1.5">
-          <span>🚪</span> Keluar (Logout)
+      <div class="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2">
+        <button type="button" onclick="openApiConfigModal()" class="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+          ⚙️ URL API
+        </button>
+        <button type="button" onclick="handleLogout()" class="py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-extrabold transition">
+          🚪 Keluar
         </button>
       </div>
     </div>
@@ -823,12 +858,20 @@
   <div id="globalLoader" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 hidden items-center justify-center">
     <div class="bg-white px-5 py-4 rounded-2xl flex items-center gap-3 shadow-2xl">
       <div class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-      <span class="text-xs font-bold text-slate-700">Memproses...</span>
+      <span class="text-xs font-bold text-slate-700">Menyinkronkan Spreadsheet...</span>
     </div>
   </div>
 
-  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <!-- ==================== JAVASCRIPT LOGIC (FETCH API BRIDGE) ==================== -->
   <script>
+    /* ========================================================================
+       KONFIGURASI URL WEB APP GOOGLE APPS SCRIPT
+       Ganti URL di bawah ini dengan Web App URL dari Deploy Apps Script Anda!
+       ======================================================================== */
+    const DEFAULT_GAS_API_URL = "https://script.google.com/macros/s/GANTI_DENGAN_ID_DEPLOY_ANDA/exec";
+    const GAS_URL_OVERRIDE_KEY = "MOTOCARE_GAS_API_URL";
+    const SESSION_STORAGE_KEY = "MOTOCARE_USER_SESSION";
+
     let CURRENT_SESSION = {
       token: null,
       user: null
@@ -850,18 +893,74 @@
     let confirmCallback = null;
     let activeMessageTargetId = null;
 
-    const IS_GAS = typeof google !== 'undefined' && google.script && typeof google.script.run !== 'undefined';
-    const PREVIEW_STORE_KEY = 'MOTOCARE_MULTIUSER_PREVIEW_V1';
-    const SESSION_STORAGE_KEY = 'MOTOCARE_USER_SESSION';
+    const IS_NATIVE_GAS = typeof google !== 'undefined' && google.script && typeof google.script.run !== 'undefined';
 
-    function initPreviewStoreIfNeeded() {
-      if (localStorage.getItem(PREVIEW_STORE_KEY)) return;
-      const initial = {
-        users: [],
-        kendaraan: [],
-        logs: []
-      };
-      localStorage.setItem(PREVIEW_STORE_KEY, JSON.stringify(initial));
+    function getActiveGasUrl() {
+      const saved = localStorage.getItem(GAS_URL_OVERRIDE_KEY);
+      if (saved && saved.startsWith('https://script.google.com/macros/s/')) {
+        return saved.trim();
+      }
+      return DEFAULT_GAS_API_URL;
+    }
+
+    function isGasUrlConfigured() {
+      if (IS_NATIVE_GAS) return true;
+      const url = getActiveGasUrl();
+      return url.startsWith('https://script.google.com/macros/s/') && !url.includes('GANTI_DENGAN_ID');
+    }
+
+    /**
+     * Jembatan Komunikasi Terpadu ke Google Spreadsheet:
+     * - Menggunakan HTTP POST fetch() jika dijalankan di Vercel / GitHub / Browser
+     * - Menggunakan google.script.run jika dibuka langsung dari iframe Apps Script
+     */
+    async function callApi(action, params = {}) {
+      if (IS_NATIVE_GAS) {
+        return new Promise((resolve, reject) => {
+          const runner = google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(err => reject(new Error(err.message || 'Server error')));
+
+          switch (action) {
+            case 'verifySession': runner.verifySession(params.token); break;
+            case 'registerUser': runner.registerUser(params.payload); break;
+            case 'loginUser': runner.loginUser(params.identifier, params.password); break;
+            case 'logoutUser': runner.logoutUser(params.token); break;
+            case 'requestPasswordReset': runner.requestPasswordReset(params.identifier); break;
+            case 'confirmPasswordReset': runner.confirmPasswordReset(params.identifier, params.otp, params.newPassword); break;
+            case 'updateOwnProfile': runner.updateOwnProfile(params.token, params.payload); break;
+            case 'changeOwnPassword': runner.changeOwnPassword(params.token, params.oldPass, params.newPass); break;
+            case 'getAppData': runner.getAppData(params.token); break;
+            case 'saveKendaraan': runner.saveKendaraan(params.token, params.payload); break;
+            case 'updateOdometer': runner.updateOdometer(params.token, params.idKendaraan, params.newOdo); break;
+            case 'deleteKendaraan': runner.deleteKendaraan(params.token, params.idKendaraan); break;
+            case 'saveLogServis': runner.saveLogServis(params.token, params.payload); break;
+            case 'deleteLogServis': runner.deleteLogServis(params.token, params.idServis); break;
+            case 'generateReminderMessage': runner.generateReminderMessage(params.token, params.idKendaraan); break;
+            case 'sendReminderEmail': runner.sendReminderEmail(params.token, params.idKendaraan); break;
+            default: reject(new Error('Action tidak dikenal: ' + action));
+          }
+        });
+      }
+
+      if (!isGasUrlConfigured()) {
+        throw new Error('URL Google Apps Script belum dipasang. Klik "Atur URL Web App Spreadsheet" terlebih dahulu.');
+      }
+
+      const response = await fetch(getActiveGasUrl(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        redirect: 'follow',
+        body: JSON.stringify(Object.assign({ action: action }, params))
+      });
+
+      if (!response.ok) {
+        throw new Error('Gagal terhubung ke server Apps Script (HTTP ' + response.status + ')');
+      }
+
+      return await response.json();
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -880,9 +979,33 @@
         closeModal('modalConfirm');
       };
 
-      if (!IS_GAS) initPreviewStoreIfNeeded();
+      if (!isGasUrlConfigured()) {
+        document.getElementById('apiSetupBanner').classList.remove('hidden');
+      }
+
       restoreSessionOrShowAuth();
     });
+
+    // ==================== PENGATURAN URL API ====================
+    function openApiConfigModal() {
+      document.getElementById('cfg_gas_url').value = isGasUrlConfigured() && !IS_NATIVE_GAS ? getActiveGasUrl() : '';
+      openModal('modalApiConfig');
+    }
+
+    function saveGasUrlConfig() {
+      const val = document.getElementById('cfg_gas_url').value.trim();
+      if (!val.startsWith('https://script.google.com/macros/s/')) {
+        showToast('URL tidak valid. Harus diawali https://script.google.com/macros/s/', 'error');
+        return;
+      }
+      localStorage.setItem(GAS_URL_OVERRIDE_KEY, val);
+      document.getElementById('apiSetupBanner').classList.add('hidden');
+      closeModal('modalApiConfig');
+      showToast('URL Web App Spreadsheet berhasil disimpan!');
+      if (CURRENT_SESSION.token) {
+        loadAllData();
+      }
+    }
 
     // ==================== 1. AUTH SCREEN (LOGIN & DAFTAR BARU) ====================
     function switchAuthMode(mode) {
@@ -946,8 +1069,8 @@
       document.getElementById('headerUserHandle').textContent = '@' + u.username;
     }
 
-    function restoreSessionOrShowAuth() {
-      const savedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    async function restoreSessionOrShowAuth() {
+      const savedSession = localStorage.getItem(SESSION_STORAGE_KEY);
       if (!savedSession) {
         showAuthScreen();
         return;
@@ -961,40 +1084,31 @@
         }
 
         CURRENT_SESSION = parsed;
-        if (IS_GAS) {
-          toggleLoader(true);
-          google.script.run
-            .withSuccessHandler(function(res) {
-              toggleLoader(false);
-              if (res.success && res.user) {
-                CURRENT_SESSION.user = res.user;
-                sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
-                enterAuthenticatedApp();
-              } else {
-                clearSessionAndShowAuth('Sesi telah berakhir. Silakan login kembali.');
-              }
-            })
-            .withFailureHandler(function() {
-              toggleLoader(false);
-              clearSessionAndShowAuth('Gagal memverifikasi sesi.');
-            })
-            .verifySession(CURRENT_SESSION.token);
-        } else {
+        toggleLoader(true);
+        const res = await callApi('verifySession', { token: CURRENT_SESSION.token });
+        toggleLoader(false);
+
+        if (res.success && res.user) {
+          CURRENT_SESSION.user = res.user;
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
           enterAuthenticatedApp();
+        } else {
+          clearSessionAndShowAuth('Sesi telah berakhir. Silakan login kembali.');
         }
       } catch (e) {
-        showAuthScreen();
+        toggleLoader(false);
+        clearSessionAndShowAuth('');
       }
     }
 
     function clearSessionAndShowAuth(msg) {
       CURRENT_SESSION = { token: null, user: null };
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      localStorage.removeItem(SESSION_STORAGE_KEY);
       showAuthScreen();
       if (msg) showToast(msg, 'error');
     }
 
-    function handleRegisterSubmit(e) {
+    async function handleRegisterSubmit(e) {
       e.preventDefault();
       const pass = document.getElementById('reg_password').value;
       const confirmPass = document.getElementById('reg_password_confirm').value;
@@ -1015,71 +1129,28 @@
       btn.disabled = true;
       toggleLoader(true);
 
-      if (IS_GAS) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            btn.disabled = false;
-            if (res.success) {
-              CURRENT_SESSION = { token: res.token, user: res.user };
-              sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
-              document.getElementById('formRegister').reset();
-              showToast('Pendaftaran berhasil! Selamat datang, ' + res.user.nama_lengkap);
-              enterAuthenticatedApp();
-            } else {
-              showToast(res.error || 'Pendaftaran gagal.', 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            btn.disabled = false;
-            showToast('Kesalahan server: ' + err.message, 'error');
-          })
-          .registerUser(payload);
-      } else {
-        setTimeout(() => {
-          toggleLoader(false);
-          btn.disabled = false;
-          let store = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY));
+      try {
+        const res = await callApi('registerUser', { payload: payload });
+        toggleLoader(false);
+        btn.disabled = false;
 
-          if (store.users.some(u => u.username === payload.username)) {
-            showToast('Username sudah digunakan. Pilih username lain.', 'error');
-            return;
-          }
-          if (store.users.some(u => u.email === payload.email)) {
-            showToast('Email sudah terdaftar. Silakan login.', 'error');
-            return;
-          }
-
-          const newUser = {
-            id_user: 'USR-' + Math.random().toString(36).substring(2, 9).toUpperCase(),
-            username: payload.username,
-            nama_lengkap: payload.nama_lengkap,
-            email: payload.email,
-            password: payload.password,
-            status: 'AKTIF'
-          };
-          store.users.push(newUser);
-          localStorage.setItem(PREVIEW_STORE_KEY, JSON.stringify(store));
-
-          CURRENT_SESSION = {
-            token: 'LOCAL-' + Math.random().toString(36).substring(2),
-            user: {
-              id_user: newUser.id_user,
-              username: newUser.username,
-              nama_lengkap: newUser.nama_lengkap,
-              email: newUser.email
-            }
-          };
-          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
+        if (res.success) {
+          CURRENT_SESSION = { token: res.token, user: res.user };
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
           document.getElementById('formRegister').reset();
-          showToast('Pendaftaran berhasil! Selamat datang, ' + newUser.nama_lengkap);
+          showToast('Pendaftaran berhasil! Selamat datang, ' + res.user.nama_lengkap);
           enterAuthenticatedApp();
-        }, 180);
+        } else {
+          showToast(res.error || 'Pendaftaran gagal.', 'error');
+        }
+      } catch (err) {
+        toggleLoader(false);
+        btn.disabled = false;
+        showToast(err.message, 'error');
       }
     }
 
-    function handleLoginSubmit(e) {
+    async function handleLoginSubmit(e) {
       e.preventDefault();
       const identifier = document.getElementById('login_identifier').value.trim();
       const password = document.getElementById('login_password').value;
@@ -1093,64 +1164,32 @@
       btn.disabled = true;
       toggleLoader(true);
 
-      if (IS_GAS) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            btn.disabled = false;
-            if (res.success) {
-              CURRENT_SESSION = { token: res.token, user: res.user };
-              sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
-              document.getElementById('formLogin').reset();
-              showToast('Selamat datang kembali, ' + res.user.nama_lengkap + '!');
-              enterAuthenticatedApp();
-            } else {
-              showToast(res.error || 'Login gagal.', 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            btn.disabled = false;
-            showToast('Koneksi server gagal: ' + err.message, 'error');
-          })
-          .loginUser(identifier, password);
-      } else {
-        setTimeout(() => {
-          toggleLoader(false);
-          btn.disabled = false;
-          const store = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY) || '{}');
-          const cleanId = identifier.toLowerCase();
-          const found = (store.users || []).find(
-            u => (u.username === cleanId || u.email === cleanId) && u.password === password
-          );
+      try {
+        const res = await callApi('loginUser', { identifier: identifier, password: password });
+        toggleLoader(false);
+        btn.disabled = false;
 
-          if (!found) {
-            showToast('Username/email atau kata sandi salah.', 'error');
-            return;
-          }
-
-          CURRENT_SESSION = {
-            token: 'LOCAL-' + Math.random().toString(36).substring(2),
-            user: {
-              id_user: found.id_user,
-              username: found.username,
-              nama_lengkap: found.nama_lengkap,
-              email: found.email
-            }
-          };
-          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
+        if (res.success) {
+          CURRENT_SESSION = { token: res.token, user: res.user };
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
           document.getElementById('formLogin').reset();
-          showToast('Selamat datang, ' + found.nama_lengkap + '!');
+          showToast('Selamat datang kembali, ' + res.user.nama_lengkap + '!');
           enterAuthenticatedApp();
-        }, 180);
+        } else {
+          showToast(res.error || 'Login gagal.', 'error');
+        }
+      } catch (err) {
+        toggleLoader(false);
+        btn.disabled = false;
+        showToast(err.message, 'error');
       }
     }
 
-    function handleLogout() {
+    async function handleLogout() {
       const tokenToKill = CURRENT_SESSION.token;
       closeModal('modalAccount');
-      if (IS_GAS && tokenToKill) {
-        google.script.run.logoutUser(tokenToKill);
+      if (tokenToKill) {
+        callApi('logoutUser', { token: tokenToKill }).catch(() => {});
       }
       clearSessionAndShowAuth('Anda telah keluar dari akun.');
     }
@@ -1169,7 +1208,7 @@
       document.getElementById('fpStep2').classList.add('hidden');
     }
 
-    function handleRequestOtp() {
+    async function handleRequestOtp() {
       const identifier = document.getElementById('fp_identifier').value.trim();
       if (!identifier) {
         showToast('Masukkan username atau email terdaftar.', 'error');
@@ -1177,43 +1216,24 @@
       }
 
       toggleLoader(true);
-      if (IS_GAS) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            if (res.success) {
-              document.getElementById('fp_sent_to').textContent = res.maskedEmail || 'email terdaftar';
-              document.getElementById('fpStep1').classList.add('hidden');
-              document.getElementById('fpStep2').classList.remove('hidden');
-              showToast(res.message);
-            } else {
-              showToast(res.error, 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            showToast(err.message, 'error');
-          })
-          .requestPasswordReset(identifier);
-      } else {
+      try {
+        const res = await callApi('requestPasswordReset', { identifier: identifier });
         toggleLoader(false);
-        const store = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY) || '{}');
-        const user = (store.users || []).find(
-          u => u.username === identifier.toLowerCase() || u.email === identifier.toLowerCase()
-        );
-        if (!user) {
-          showToast('Username atau email tidak ditemukan.', 'error');
-          return;
+        if (res.success) {
+          document.getElementById('fp_sent_to').textContent = res.maskedEmail || 'email terdaftar';
+          document.getElementById('fpStep1').classList.add('hidden');
+          document.getElementById('fpStep2').classList.remove('hidden');
+          showToast(res.message);
+        } else {
+          showToast(res.error, 'error');
         }
-        sessionStorage.setItem('PREVIEW_OTP', '123456');
-        document.getElementById('fp_sent_to').textContent = user.email + ' (Simulasi OTP: 123456)';
-        document.getElementById('fpStep1').classList.add('hidden');
-        document.getElementById('fpStep2').classList.remove('hidden');
-        showToast('Kode OTP simulasi: 123456');
+      } catch (err) {
+        toggleLoader(false);
+        showToast(err.message, 'error');
       }
     }
 
-    function handleConfirmOtpReset() {
+    async function handleConfirmOtpReset() {
       const identifier = document.getElementById('fp_identifier').value.trim();
       const otp = document.getElementById('fp_otp').value.trim();
       const newPass = document.getElementById('fp_new_password').value;
@@ -1224,38 +1244,22 @@
       }
 
       toggleLoader(true);
-      if (IS_GAS) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            if (res.success) {
-              closeModal('modalForgotPassword');
-              showToast(res.message);
-            } else {
-              showToast(res.error, 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            showToast(err.message, 'error');
-          })
-          .confirmPasswordReset(identifier, otp, newPass);
-      } else {
+      try {
+        const res = await callApi('confirmPasswordReset', {
+          identifier: identifier,
+          otp: otp,
+          newPassword: newPass
+        });
         toggleLoader(false);
-        if (otp !== sessionStorage.getItem('PREVIEW_OTP')) {
-          showToast('Kode OTP salah.', 'error');
-          return;
+        if (res.success) {
+          closeModal('modalForgotPassword');
+          showToast(res.message);
+        } else {
+          showToast(res.error, 'error');
         }
-        const store = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY) || '{}');
-        const user = (store.users || []).find(
-          u => u.username === identifier.toLowerCase() || u.email === identifier.toLowerCase()
-        );
-        if (user) {
-          user.password = newPass;
-          localStorage.setItem(PREVIEW_STORE_KEY, JSON.stringify(store));
-        }
-        closeModal('modalForgotPassword');
-        showToast('Kata sandi berhasil direset! Silakan login.');
+      } catch (err) {
+        toggleLoader(false);
+        showToast(err.message, 'error');
       }
     }
 
@@ -1271,7 +1275,7 @@
       openModal('modalAccount');
     }
 
-    function handleUpdateProfileSubmit(e) {
+    async function handleUpdateProfileSubmit(e) {
       e.preventDefault();
       const payload = {
         nama_lengkap: document.getElementById('prof_nama').value.trim(),
@@ -1279,79 +1283,49 @@
       };
 
       toggleLoader(true);
-      if (IS_GAS) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            if (res.success) {
-              CURRENT_SESSION.user = res.user;
-              sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
-              updateUserHeaderUI();
-              document.getElementById('profileFullName').textContent = res.user.nama_lengkap;
-              showToast(res.message);
-            } else {
-              showToast(res.error, 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            showToast(err.message, 'error');
-          })
-          .updateOwnProfile(CURRENT_SESSION.token, payload);
-      } else {
+      try {
+        const res = await callApi('updateOwnProfile', {
+          token: CURRENT_SESSION.token,
+          payload: payload
+        });
         toggleLoader(false);
-        let store = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY));
-        const acc = store.users.find(x => x.id_user === CURRENT_SESSION.user.id_user);
-        if (acc) {
-          acc.nama_lengkap = payload.nama_lengkap;
-          acc.email = payload.email;
-          localStorage.setItem(PREVIEW_STORE_KEY, JSON.stringify(store));
-          CURRENT_SESSION.user.nama_lengkap = payload.nama_lengkap;
-          CURRENT_SESSION.user.email = payload.email;
-          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
+        if (res.success) {
+          CURRENT_SESSION.user = res.user;
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
           updateUserHeaderUI();
-          document.getElementById('profileFullName').textContent = payload.nama_lengkap;
-          showToast('Profil berhasil diperbarui.');
+          document.getElementById('profileFullName').textContent = res.user.nama_lengkap;
+          showToast(res.message);
+        } else {
+          showToast(res.error, 'error');
         }
+      } catch (err) {
+        toggleLoader(false);
+        showToast(err.message, 'error');
       }
     }
 
-    function handleChangePasswordSubmit(e) {
+    async function handleChangePasswordSubmit(e) {
       e.preventDefault();
       const oldPass = document.getElementById('cp_old').value;
       const newPass = document.getElementById('cp_new').value;
 
       toggleLoader(true);
-      if (IS_GAS) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            if (res.success) {
-              showToast(res.message);
-              closeModal('modalAccount');
-            } else {
-              showToast(res.error, 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            showToast(err.message, 'error');
-          })
-          .changeOwnPassword(CURRENT_SESSION.token, oldPass, newPass);
-      } else {
-        setTimeout(() => {
-          toggleLoader(false);
-          let store = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY));
-          const acc = (store.users || []).find(x => x.id_user === CURRENT_SESSION.user.id_user);
-          if (!acc || acc.password !== oldPass) {
-            showToast('Kata sandi lama tidak sesuai.', 'error');
-            return;
-          }
-          acc.password = newPass;
-          localStorage.setItem(PREVIEW_STORE_KEY, JSON.stringify(store));
-          showToast('Kata sandi berhasil diperbarui!');
+      try {
+        const res = await callApi('changeOwnPassword', {
+          token: CURRENT_SESSION.token,
+          oldPass: oldPass,
+          newPass: newPass
+        });
+        toggleLoader(false);
+        if (res.success) {
+          showToast(res.message);
           closeModal('modalAccount');
-        }, 150);
+        } else {
+          showToast(res.error, 'error');
+        }
+      } catch (err) {
+        toggleLoader(false);
+        showToast(err.message, 'error');
       }
     }
 
@@ -1406,7 +1380,7 @@
       toast.innerHTML = `
         <div class="flex items-center space-x-2">
           <span>${type === 'error' ? '⚠️' : '✅'}</span>
-          <span>${text}</span>
+          <span>${escapeHtml(text)}</span>
         </div>
       `;
       box.appendChild(toast);
@@ -1415,7 +1389,7 @@
         toast.style.transform = 'translateY(-10px)';
         toast.style.transition = 'all 0.3s ease';
         setTimeout(() => toast.remove(), 300);
-      }, 3200);
+      }, 3400);
     }
 
     function toggleLoader(show) {
@@ -1429,130 +1403,35 @@
       }
     }
 
-    // ==================== 5. LOAD & ISOLASI DATA PER PENGGUNA ====================
-    function loadAllData() {
+    // ==================== 5. LOAD & SINKRONISASI DATA SPREADSHEET ====================
+    async function loadAllData() {
       if (!CURRENT_SESSION.token) {
         showAuthScreen();
         return;
       }
 
       toggleLoader(true);
+      try {
+        const res = await callApi('getAppData', { token: CURRENT_SESSION.token });
+        toggleLoader(false);
 
-      if (IS_GAS) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            if (res.success) {
-              APP_DATA = res.data;
-              renderApp();
-            } else if (res.sessionExpired) {
-              clearSessionAndShowAuth(res.error);
-            } else {
-              showToast(res.error || 'Gagal memuat data.', 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            showToast('Koneksi server gagal: ' + err.message, 'error');
-          })
-          .getAppData(CURRENT_SESSION.token);
-      } else {
-        setTimeout(() => {
-          toggleLoader(false);
-          const parsed = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY) || '{}');
-          const uid = CURRENT_SESSION.user.id_user;
-          APP_DATA.kendaraan = (parsed.kendaraan || []).filter(k => k.id_user === uid);
-          APP_DATA.logs = (parsed.logs || []).filter(l => l.id_user === uid);
-          computeLocalReminders();
+        if (res.success) {
+          APP_DATA = res.data;
           renderApp();
-        }, 180);
+        } else if (res.sessionExpired) {
+          clearSessionAndShowAuth(res.error);
+        } else {
+          showToast(res.error || 'Gagal memuat data.', 'error');
+        }
+      } catch (err) {
+        toggleLoader(false);
+        showToast(err.message, 'error');
       }
     }
 
     function refreshData() {
       loadAllData();
-      showToast('Data berhasil disinkronkan!');
-    }
-
-    function computeLocalReminders() {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      APP_DATA.reminders = APP_DATA.kendaraan.map(k => {
-        const unitLogs = APP_DATA.logs.filter(l => l.id_kendaraan === k.id_kendaraan);
-        const lastLog = unitLogs.length > 0 ? unitLogs[0] : null;
-
-        let status = 'HEALTHY';
-        let statusText = 'Kondisi Aman';
-        let sisaKm = null;
-        let sisaHari = null;
-        let targetKm = 0;
-        let targetTgl = '';
-
-        if (!lastLog) {
-          status = 'NEW';
-          statusText = 'Belum Ada Servis';
-        } else {
-          targetKm = Number(lastLog.target_km_next) || 0;
-          targetTgl = lastLog.target_tgl_next || '';
-
-          if (targetKm > 0) {
-            sisaKm = targetKm - Number(k.odometer_saat_ini || 0);
-          }
-          if (targetTgl) {
-            const nextD = new Date(targetTgl);
-            nextD.setHours(0, 0, 0, 0);
-            sisaHari = Math.ceil((nextD - today) / (1000 * 60 * 60 * 24));
-          }
-
-          if ((sisaKm !== null && sisaKm <= 0) || (sisaHari !== null && sisaHari <= 0)) {
-            status = 'OVERDUE';
-            statusText = 'Jatuh Tempo (Perlu Servis)';
-          } else if ((sisaKm !== null && sisaKm <= 200) || (sisaHari !== null && sisaHari <= 7)) {
-            status = 'WARNING';
-            statusText = 'Segera Servis';
-          }
-        }
-
-        return {
-          id_kendaraan: k.id_kendaraan,
-          no_polisi: k.no_polisi,
-          nama_kendaraan: k.nama_kendaraan,
-          jenis: k.jenis,
-          odometer_saat_ini: k.odometer_saat_ini,
-          last_service_date: lastLog ? lastLog.tanggal_servis : '-',
-          target_km: targetKm,
-          target_tgl: targetTgl,
-          sisa_km: sisaKm,
-          sisa_hari: sisaHari,
-          status: status,
-          status_text: statusText
-        };
-      });
-
-      let overdue = 0, warning = 0;
-      APP_DATA.reminders.forEach(r => {
-        if (r.status === 'OVERDUE') overdue++;
-        if (r.status === 'WARNING') warning++;
-      });
-
-      let monthlyTotal = 0;
-      const now = new Date();
-      APP_DATA.logs.forEach(l => {
-        if (l.tanggal_servis) {
-          const d = new Date(l.tanggal_servis);
-          if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
-            monthlyTotal += Number(l.biaya || 0);
-          }
-        }
-      });
-
-      APP_DATA.summary = {
-        totalKendaraan: APP_DATA.kendaraan.length,
-        totalOverdue: overdue,
-        totalWarning: warning,
-        biayaBulanIni: monthlyTotal
-      };
+      showToast('Menyinkronkan data dari Google Spreadsheet...');
     }
 
     // ==================== 6. RENDER UI ====================
@@ -1651,7 +1530,7 @@
 
         let statusDesc = 'Aman & Terawat';
         if (item.status === 'OVERDUE') {
-          statusDesc = item.sisa_km <= 0 ? `Lewat ${Math.abs(item.sisa_km)} KM` : 'Jatuh Tempo';
+          statusDesc = item.sisa_km !== null && item.sisa_km <= 0 ? `Lewat ${Math.abs(item.sisa_km)} KM` : 'Jatuh Tempo';
         } else if (item.status === 'WARNING') {
           statusDesc = `Sisa ${item.sisa_km} KM lagi`;
         } else if (item.status === 'NEW') {
@@ -1827,53 +1706,24 @@
     }
 
     // ==================== 7. FITUR PESAN PENGINGAT (WHATSAPP / EMAIL) ====================
-    function openMessageModal(idKendaraan) {
+    async function openMessageModal(idKendaraan) {
       activeMessageTargetId = idKendaraan;
-      const targetVehicle = APP_DATA.kendaraan.find(k => k.id_kendaraan === idKendaraan);
-      if (!targetVehicle) return;
-
-      if (IS_GAS) {
-        toggleLoader(true);
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            if (res.success) {
-              document.getElementById('reminderMessageContent').value = res.data.messageText;
-              openModal('modalMessage');
-            } else {
-              showToast(res.error || 'Gagal memuat format pesan.', 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            showToast('Koneksi server gagal: ' + err.message, 'error');
-          })
-          .generateReminderMessage(CURRENT_SESSION.token, idKendaraan);
-      } else {
-        const reminder = APP_DATA.reminders.find(r => r.id_kendaraan === idKendaraan);
-        const statusText = reminder && reminder.status === 'OVERDUE' ? '🚨 *JATUH TEMPO (PERLU SERVIS)*' : 
-                           (reminder && reminder.status === 'WARNING' ? '⚠️ *MENDEKATI JADWAL SERVIS*' : '🟢 *Kondisi Terawat*');
-        
-        let kmInfo = reminder && reminder.target_km ? `${reminder.target_km.toLocaleString('id-ID')} KM (Sisa ${reminder.sisa_km || 0} KM)` : '-';
-        let tglInfo = reminder && reminder.target_tgl ? reminder.target_tgl : '-';
-
-        const text = 
-          '🔔 *PENGINGAT SERVIS KENDARAAN*\n' +
-          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-          statusText + '\n\n' +
-          '🛵 *Unit:* ' + targetVehicle.nama_kendaraan + ' (' + targetVehicle.jenis + ')\n' +
-          '🔢 *No. Polisi:* ' + targetVehicle.no_polisi + '\n' +
-          '📈 *Odometer Saat Ini:* ' + Number(targetVehicle.odometer_saat_ini).toLocaleString('id-ID') + ' KM\n\n' +
-          '🎯 *Batas Target Servis:*\n' +
-          '• Target Odometer : ' + kmInfo + '\n' +
-          '• Target Tanggal  : ' + tglInfo + '\n\n' +
-          '🔧 *Rekomendasi Tindakan:*\n' +
-          'Segera jadwalkan penggantian pelumas dan pengecekan rutin agar kendaraan tetap prima.\n' +
-          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-          '_MotoCare - Record Kendaraan Bermotor_';
-
-        document.getElementById('reminderMessageContent').value = text;
-        openModal('modalMessage');
+      toggleLoader(true);
+      try {
+        const res = await callApi('generateReminderMessage', {
+          token: CURRENT_SESSION.token,
+          idKendaraan: idKendaraan
+        });
+        toggleLoader(false);
+        if (res.success) {
+          document.getElementById('reminderMessageContent').value = res.data.messageText;
+          openModal('modalMessage');
+        } else {
+          showToast(res.error || 'Gagal memuat format pesan.', 'error');
+        }
+      } catch (err) {
+        toggleLoader(false);
+        showToast(err.message, 'error');
       }
     }
 
@@ -1912,29 +1762,24 @@
       }
     }
 
-    function triggerEmailNotification() {
+    async function triggerEmailNotification() {
       if (!activeMessageTargetId) return;
-
-      if (IS_GAS) {
-        toggleLoader(true);
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            if (res.success) {
-              showToast(res.message);
-              closeModal('modalMessage');
-            } else {
-              showToast(res.error, 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            showToast('Pengiriman email gagal: ' + err.message, 'error');
-          })
-          .sendReminderEmail(CURRENT_SESSION.token, activeMessageTargetId);
-      } else {
-        showToast('Simulasi: Email pengingat servis dikirim ke ' + (CURRENT_SESSION.user.email || 'email Anda') + '!');
-        closeModal('modalMessage');
+      toggleLoader(true);
+      try {
+        const res = await callApi('sendReminderEmail', {
+          token: CURRENT_SESSION.token,
+          idKendaraan: activeMessageTargetId
+        });
+        toggleLoader(false);
+        if (res.success) {
+          showToast(res.message);
+          closeModal('modalMessage');
+        } else {
+          showToast(res.error, 'error');
+        }
+      } catch (err) {
+        toggleLoader(false);
+        showToast(err.message, 'error');
       }
     }
 
@@ -1960,11 +1805,10 @@
       openModal('modalKendaraan');
     }
 
-    function handleSaveKendaraanModal(e) {
+    async function handleSaveKendaraanModal(e) {
       e.preventDefault();
-      const id = document.getElementById('modal_k_id').value;
       const payload = {
-        id_kendaraan: id,
+        id_kendaraan: document.getElementById('modal_k_id').value,
         no_polisi: document.getElementById('modal_k_nopol').value.trim().toUpperCase(),
         nama_kendaraan: document.getElementById('modal_k_nama').value.trim(),
         jenis: document.getElementById('modal_k_jenis').value,
@@ -1974,73 +1818,43 @@
       };
 
       toggleLoader(true);
-      if (IS_GAS) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            if (res.success) {
-              closeModal('modalKendaraan');
-              showToast(res.message);
-              loadAllData();
-            } else {
-              showToast(res.error, 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            showToast(err.message, 'error');
-          })
-          .saveKendaraan(CURRENT_SESSION.token, payload);
-      } else {
-        setTimeout(() => {
-          toggleLoader(false);
-          let store = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY));
-          const uid = CURRENT_SESSION.user.id_user;
-
-          if (id) {
-            const idx = store.kendaraan.findIndex(x => x.id_kendaraan === id && x.id_user === uid);
-            if (idx > -1) store.kendaraan[idx] = Object.assign(store.kendaraan[idx], payload);
-          } else {
-            payload.id_kendaraan = 'KD-' + Math.random().toString(36).substring(2, 9).toUpperCase();
-            payload.id_user = uid;
-            store.kendaraan.unshift(payload);
-          }
-          localStorage.setItem(PREVIEW_STORE_KEY, JSON.stringify(store));
+      try {
+        const res = await callApi('saveKendaraan', {
+          token: CURRENT_SESSION.token,
+          payload: payload
+        });
+        toggleLoader(false);
+        if (res.success) {
           closeModal('modalKendaraan');
-          showToast('Data kendaraan berhasil disimpan!');
+          showToast(res.message);
           loadAllData();
-        }, 150);
+        } else {
+          showToast(res.error, 'error');
+        }
+      } catch (err) {
+        toggleLoader(false);
+        showToast(err.message, 'error');
       }
     }
 
     function requestDeleteKendaraan(id, nopol) {
-      showConfirmDialog('Hapus Kendaraan?', `Data ${nopol} beserta seluruh riwayat servisnya akan dihapus permanen.`, function() {
+      showConfirmDialog('Hapus Kendaraan?', `Data ${nopol} beserta seluruh riwayat servisnya akan dihapus permanen.`, async function() {
         toggleLoader(true);
-        if (IS_GAS) {
-          google.script.run
-            .withSuccessHandler(function(res) {
-              toggleLoader(false);
-              if (res.success) {
-                showToast(res.message);
-                loadAllData();
-              } else {
-                showToast(res.error, 'error');
-              }
-            })
-            .withFailureHandler(function(err) {
-              toggleLoader(false);
-              showToast(err.message, 'error');
-            })
-            .deleteKendaraan(CURRENT_SESSION.token, id);
-        } else {
-          let store = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY));
-          const uid = CURRENT_SESSION.user.id_user;
-          store.kendaraan = store.kendaraan.filter(k => !(k.id_kendaraan === id && k.id_user === uid));
-          store.logs = store.logs.filter(l => !(l.id_kendaraan === id && l.id_user === uid));
-          localStorage.setItem(PREVIEW_STORE_KEY, JSON.stringify(store));
+        try {
+          const res = await callApi('deleteKendaraan', {
+            token: CURRENT_SESSION.token,
+            idKendaraan: id
+          });
           toggleLoader(false);
-          showToast('Kendaraan berhasil dihapus.');
-          loadAllData();
+          if (res.success) {
+            showToast(res.message);
+            loadAllData();
+          } else {
+            showToast(res.error, 'error');
+          }
+        } catch (err) {
+          toggleLoader(false);
+          showToast(err.message, 'error');
         }
       });
     }
@@ -2068,43 +1882,29 @@
       input.value = (Number(input.value) || 0) + amount;
     }
 
-    function handleQuickOdoSubmit(e) {
+    async function handleQuickOdoSubmit(e) {
       e.preventDefault();
       const id = document.getElementById('quick_odo_kid').value;
       const newOdo = Number(document.getElementById('quick_odo_val').value) || 0;
 
       toggleLoader(true);
-      if (IS_GAS) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            if (res.success) {
-              closeModal('modalQuickOdo');
-              showToast(res.message);
-              loadAllData();
-            } else {
-              showToast(res.error, 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            showToast(err.message, 'error');
-          })
-          .updateOdometer(CURRENT_SESSION.token, id, newOdo);
-      } else {
-        setTimeout(() => {
-          toggleLoader(false);
-          let store = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY));
-          const uid = CURRENT_SESSION.user.id_user;
-          const unit = store.kendaraan.find(k => k.id_kendaraan === id && k.id_user === uid);
-          if (unit) {
-            unit.odometer_saat_ini = newOdo;
-            localStorage.setItem(PREVIEW_STORE_KEY, JSON.stringify(store));
-            closeModal('modalQuickOdo');
-            showToast(`Odometer diperbarui menjadi ${newOdo.toLocaleString('id-ID')} KM`);
-            loadAllData();
-          }
-        }, 150);
+      try {
+        const res = await callApi('updateOdometer', {
+          token: CURRENT_SESSION.token,
+          idKendaraan: id,
+          newOdo: newOdo
+        });
+        toggleLoader(false);
+        if (res.success) {
+          closeModal('modalQuickOdo');
+          showToast(res.message);
+          loadAllData();
+        } else {
+          showToast(res.error, 'error');
+        }
+      } catch (err) {
+        toggleLoader(false);
+        showToast(err.message, 'error');
       }
     }
 
@@ -2164,7 +1964,7 @@
       document.getElementById('srv_tanggal').value = new Date().toISOString().split('T')[0];
     }
 
-    function handleSaveService(e) {
+    async function handleSaveService(e) {
       e.preventDefault();
       const payload = {
         id_kendaraan: document.getElementById('srv_kendaraan').value,
@@ -2179,77 +1979,44 @@
       };
 
       toggleLoader(true);
-      if (IS_GAS) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            toggleLoader(false);
-            if (res.success) {
-              showToast(res.message);
-              resetServiceForm();
-              loadAllData();
-              switchTab('dashboard');
-            } else {
-              showToast(res.error, 'error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            toggleLoader(false);
-            showToast(err.message, 'error');
-          })
-          .saveLogServis(CURRENT_SESSION.token, payload);
-      } else {
-        setTimeout(() => {
-          toggleLoader(false);
-          let store = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY));
-          const uid = CURRENT_SESSION.user.id_user;
-          const unit = store.kendaraan.find(k => k.id_kendaraan === payload.id_kendaraan && k.id_user === uid);
-          if (unit) {
-            payload.no_polisi = unit.no_polisi;
-            if (payload.odometer_servis > unit.odometer_saat_ini) {
-              unit.odometer_saat_ini = payload.odometer_servis;
-            }
-          }
-          payload.id_servis = 'SRV-' + Math.random().toString(36).substring(2, 9).toUpperCase();
-          payload.id_user = uid;
-          payload.created_at = new Date().toISOString();
-          store.logs.unshift(payload);
-          localStorage.setItem(PREVIEW_STORE_KEY, JSON.stringify(store));
-
-          showToast('Riwayat servis berhasil dicatat!');
+      try {
+        const res = await callApi('saveLogServis', {
+          token: CURRENT_SESSION.token,
+          payload: payload
+        });
+        toggleLoader(false);
+        if (res.success) {
+          showToast(res.message);
           resetServiceForm();
           loadAllData();
           switchTab('dashboard');
-        }, 150);
+        } else {
+          showToast(res.error, 'error');
+        }
+      } catch (err) {
+        toggleLoader(false);
+        showToast(err.message, 'error');
       }
     }
 
     function requestDeleteLog(id) {
-      showConfirmDialog('Hapus Catatan Servis?', 'Entri nota servis ini akan dihapus dari riwayat Anda.', function() {
+      showConfirmDialog('Hapus Catatan Servis?', 'Entri nota servis ini akan dihapus dari riwayat Anda.', async function() {
         toggleLoader(true);
-        if (IS_GAS) {
-          google.script.run
-            .withSuccessHandler(function(res) {
-              toggleLoader(false);
-              if (res.success) {
-                showToast(res.message);
-                loadAllData();
-              } else {
-                showToast(res.error, 'error');
-              }
-            })
-            .withFailureHandler(function(err) {
-              toggleLoader(false);
-              showToast(err.message, 'error');
-            })
-            .deleteLogServis(CURRENT_SESSION.token, id);
-        } else {
-          let store = JSON.parse(localStorage.getItem(PREVIEW_STORE_KEY));
-          const uid = CURRENT_SESSION.user.id_user;
-          store.logs = store.logs.filter(l => !(l.id_servis === id && l.id_user === uid));
-          localStorage.setItem(PREVIEW_STORE_KEY, JSON.stringify(store));
+        try {
+          const res = await callApi('deleteLogServis', {
+            token: CURRENT_SESSION.token,
+            idServis: id
+          });
           toggleLoader(false);
-          showToast('Riwayat servis berhasil dihapus.');
-          loadAllData();
+          if (res.success) {
+            showToast(res.message);
+            loadAllData();
+          } else {
+            showToast(res.error, 'error');
+          }
+        } catch (err) {
+          toggleLoader(false);
+          showToast(err.message, 'error');
         }
       });
     }
