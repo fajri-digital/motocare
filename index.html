@@ -67,19 +67,6 @@
 
   <!-- ==================== 1. AUTH SCREEN (LOGIN & DAFTAR PENGGUNA BARU) ==================== -->
   <section id="authScreen" class="max-w-md mx-auto min-h-screen flex flex-col justify-center px-5 py-8 fade-in">
-    <!-- Banner Peringatan Jika URL API Apps Script Belum Diatur -->
-    <div id="apiSetupBanner" class="hidden mb-4 bg-amber-50 border border-amber-300 text-amber-900 rounded-2xl p-3.5 text-xs shadow-lg space-y-2">
-      <div class="font-extrabold flex items-center gap-1.5">
-        <span>⚠️</span> URL Google Apps Script Belum Terhubung
-      </div>
-      <p class="text-[11px] leading-relaxed text-amber-800">
-        Agar data masuk ke Google Spreadsheet dari Vercel, tempelkan <b>Web App URL (/exec)</b> Anda di bawah ini atau ubah variabel <code>DEFAULT_GAS_API_URL</code> pada <code>index.html</code>.
-      </p>
-      <button type="button" onclick="openApiConfigModal()" class="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-extrabold transition">
-        ⚙️ Atur URL Web App Spreadsheet
-      </button>
-    </div>
-
     <div class="bg-white/95 backdrop-blur-xl rounded-[32px] p-6 sm:p-7 shadow-2xl border border-white/60 space-y-5">
       <!-- Logo Brand Resmi -->
       <div class="flex flex-col items-center text-center">
@@ -218,7 +205,7 @@
 
       <!-- Footer Keamanan & Pengaturan API -->
       <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
-        <span class="flex items-center gap-1 font-semibold text-emerald-600">
+        <span id="syncModeBadge" class="flex items-center gap-1 font-semibold text-emerald-600">
           <span>🔒</span> Google Sheets Sync
         </span>
         <button type="button" onclick="openApiConfigModal()" class="font-bold text-indigo-600 hover:underline">
@@ -682,7 +669,7 @@
           <p id="profileFullName" class="text-sm font-extrabold text-indigo-950">-</p>
           <p id="profileUsername" class="text-xs text-indigo-600 font-medium">@username</p>
         </div>
-        <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white">TERHUBUNG</span>
+        <span id="profileConnBadge" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white">TERHUBUNG</span>
       </div>
 
       <form id="formUpdateProfile" onsubmit="handleUpdateProfileSubmit(event)" class="space-y-2.5 border-t border-slate-100 pt-3">
@@ -858,11 +845,11 @@
   <div id="globalLoader" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 hidden items-center justify-center">
     <div class="bg-white px-5 py-4 rounded-2xl flex items-center gap-3 shadow-2xl">
       <div class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-      <span class="text-xs font-bold text-slate-700">Menyinkronkan Spreadsheet...</span>
+      <span class="text-xs font-bold text-slate-700">Menyinkronkan Data...</span>
     </div>
   </div>
 
-  <!-- ==================== JAVASCRIPT LOGIC (FETCH API BRIDGE) ==================== -->
+  <!-- ==================== JAVASCRIPT LOGIC (FETCH API BRIDGE + LOCAL SANDBOX) ==================== -->
   <script>
     /* ========================================================================
        KONFIGURASI URL WEB APP GOOGLE APPS SCRIPT
@@ -871,6 +858,7 @@
     const DEFAULT_GAS_API_URL = "https://script.google.com/macros/s/GANTI_DENGAN_ID_DEPLOY_ANDA/exec";
     const GAS_URL_OVERRIDE_KEY = "MOTOCARE_GAS_API_URL";
     const SESSION_STORAGE_KEY = "MOTOCARE_USER_SESSION";
+    const DEMO_STORAGE_KEY = "MOTOCARE_LOCAL_DEMO_DB";
 
     let CURRENT_SESSION = {
       token: null,
@@ -892,6 +880,7 @@
     let selectedServiceTags = [];
     let confirmCallback = null;
     let activeMessageTargetId = null;
+    let IS_LOCAL_DEMO = false;
 
     const IS_NATIVE_GAS = typeof google !== 'undefined' && google.script && typeof google.script.run !== 'undefined';
 
@@ -910,11 +899,13 @@
     }
 
     /**
-     * Jembatan Komunikasi Terpadu ke Google Spreadsheet:
-     * - Menggunakan HTTP POST fetch() jika dijalankan di Vercel / GitHub / Browser
-     * - Menggunakan google.script.run jika dibuka langsung dari iframe Apps Script
+     * Jembatan Komunikasi Terpadu ke Google Spreadsheet / Local Preview Sandbox
      */
     async function callApi(action, params = {}) {
+      if (IS_LOCAL_DEMO) {
+        return handleLocalDemoApi(action, params);
+      }
+
       if (IS_NATIVE_GAS) {
         return new Promise((resolve, reject) => {
           const runner = google.script.run
@@ -944,7 +935,7 @@
       }
 
       if (!isGasUrlConfigured()) {
-        throw new Error('URL Google Apps Script belum dipasang. Klik "Atur URL Web App Spreadsheet" terlebih dahulu.');
+        throw new Error('URL Google Apps Script belum dipasang. Klik "Atur URL GAS" atau gunakan "Coba Mode Preview".');
       }
 
       const response = await fetch(getActiveGasUrl(), {
@@ -963,6 +954,229 @@
       return await response.json();
     }
 
+    /* ========================================================================
+       LOCAL PREVIEW SANDBOX (UNTUK UJI COBA LANGSUNG DI PREVIEW TANPA GAS URL)
+       ======================================================================== */
+    function activateLocalDemoMode() {
+      IS_LOCAL_DEMO = true;
+      const demoUser = {
+        id_user: 'USR-DEMO01',
+        username: 'pengguna_demo',
+        nama_lengkap: 'Budi Santoso (Preview)',
+        email: 'budi.demo@motocare.id'
+      };
+      CURRENT_SESSION = { token: 'DEMO-TOKEN-01', user: demoUser };
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+        token: CURRENT_SESSION.token,
+        user: demoUser,
+        isDemo: true
+      }));
+      showToast('Mode Preview Interaktif Aktif (Data tersimpan di browser lokal)');
+      enterAuthenticatedApp();
+    }
+
+    function getLocalDemoDb() {
+      const raw = localStorage.getItem(DEMO_STORAGE_KEY);
+      if (raw) {
+        try { return JSON.parse(raw); } catch (e) {}
+      }
+      const today = new Date();
+      const nextDate = new Date();
+      nextDate.setDate(today.getDate() + 4);
+      const pastDate = new Date();
+      pastDate.setDate(today.getDate() - 50);
+
+      const initialDb = {
+        kendaraan: [
+          {
+            id_kendaraan: 'KD-DEMO01',
+            id_user: 'USR-DEMO01',
+            no_polisi: 'B 4512 TKR',
+            nama_kendaraan: 'Honda Vario 160 ABS',
+            jenis: 'Motor',
+            tahun: 2023,
+            odometer_saat_ini: 12450,
+            catatan: 'Unit harian kerja'
+          },
+          {
+            id_kendaraan: 'KD-DEMO02',
+            id_user: 'USR-DEMO01',
+            no_polisi: 'T 1890 KRW',
+            nama_kendaraan: 'Toyota Avanza 1.5 G',
+            jenis: 'Mobil',
+            tahun: 2022,
+            odometer_saat_ini: 34100,
+            catatan: 'Mobil keluarga'
+          }
+        ],
+        logs: [
+          {
+            id_servis: 'SRV-DEMO01',
+            id_user: 'USR-DEMO01',
+            id_kendaraan: 'KD-DEMO01',
+            no_polisi: 'B 4512 TKR',
+            tanggal_servis: pastDate.toISOString().split('T')[0],
+            odometer_servis: 10000,
+            kategori_servis: 'Oli Mesin, Oli Gardan, Servis CVT',
+            rincian_servis: 'Oli SPX2 + Filter Udara',
+            bengkel: 'AHASS Karawang',
+            biaya: 165000,
+            target_km_next: 12500,
+            target_tgl_next: nextDate.toISOString().split('T')[0]
+          }
+        ]
+      };
+      localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(initialDb));
+      return initialDb;
+    }
+
+    function saveLocalDemoDb(db) {
+      localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(db));
+    }
+
+    function handleLocalDemoApi(action, params) {
+      const db = getLocalDemoDb();
+      const user = CURRENT_SESSION.user || {
+        id_user: 'USR-DEMO01',
+        username: 'pengguna_demo',
+        nama_lengkap: 'Budi Santoso (Preview)',
+        email: 'budi.demo@motocare.id'
+      };
+
+      if (action === 'verifySession') {
+        return { success: true, user: user };
+      }
+      if (action === 'loginUser' || action === 'registerUser') {
+        const u = {
+          id_user: 'USR-DEMO01',
+          username: (params.identifier || (params.payload && params.payload.username) || 'pengguna_demo').toLowerCase(),
+          nama_lengkap: (params.payload && params.payload.nama_lengkap) || 'Pengguna Preview',
+          email: (params.payload && params.payload.email) || 'preview@motocare.id'
+        };
+        return { success: true, token: 'DEMO-TOKEN-01', user: u };
+      }
+      if (action === 'logoutUser') {
+        return { success: true };
+      }
+      if (action === 'updateOwnProfile') {
+        const updated = Object.assign({}, user, {
+          nama_lengkap: params.payload.nama_lengkap,
+          email: params.payload.email
+        });
+        return { success: true, user: updated, message: 'Profil preview diperbarui.' };
+      }
+      if (action === 'changeOwnPassword') {
+        return { success: true, message: 'Kata sandi preview diperbarui.' };
+      }
+      if (action === 'getAppData') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const reminders = db.kendaraan.map(k => {
+          const unitLogs = db.logs.filter(l => l.id_kendaraan === k.id_kendaraan);
+          const last = unitLogs[0] || null;
+          let status = 'NEW', statusText = 'Belum Ada Servis', sisaKm = null, sisaHari = null, targetKm = 0, targetTgl = '';
+          if (last) {
+            targetKm = Number(last.target_km_next) || 0;
+            targetTgl = last.target_tgl_next || '';
+            if (targetKm > 0) sisaKm = targetKm - Number(k.odometer_saat_ini);
+            if (targetTgl) {
+              const nd = new Date(targetTgl); nd.setHours(0, 0, 0, 0);
+              sisaHari = Math.ceil((nd - today) / 86400000);
+            }
+            if ((sisaKm !== null && sisaKm <= 0) || (sisaHari !== null && sisaHari <= 0)) {
+              status = 'OVERDUE'; statusText = 'Jatuh Tempo (Perlu Servis)';
+            } else if ((sisaKm !== null && sisaKm <= 200) || (sisaHari !== null && sisaHari <= 7)) {
+              status = 'WARNING'; statusText = 'Segera Servis';
+            } else {
+              status = 'HEALTHY'; statusText = 'Kondisi Aman';
+            }
+          }
+          return {
+            id_kendaraan: k.id_kendaraan,
+            no_polisi: k.no_polisi,
+            nama_kendaraan: k.nama_kendaraan,
+            jenis: k.jenis,
+            odometer_saat_ini: k.odometer_saat_ini,
+            target_km: targetKm,
+            target_tgl: targetTgl,
+            sisa_km: sisaKm,
+            sisa_hari: sisaHari,
+            status: status,
+            status_text: statusText
+          };
+        });
+        const totalOverdue = reminders.filter(r => r.status === 'OVERDUE').length;
+        const totalWarning = reminders.filter(r => r.status === 'WARNING').length;
+        const biayaBulanIni = db.logs.reduce((acc, l) => acc + (Number(l.biaya) || 0), 0);
+        return {
+          success: true,
+          data: {
+            owner: user,
+            kendaraan: db.kendaraan,
+            logs: db.logs,
+            reminders: reminders,
+            summary: {
+              totalKendaraan: db.kendaraan.length,
+              totalOverdue: totalOverdue,
+              totalWarning: totalWarning,
+              biayaBulanIni: biayaBulanIni
+            }
+          }
+        };
+      }
+      if (action === 'saveKendaraan') {
+        const p = params.payload;
+        if (p.id_kendaraan) {
+          const idx = db.kendaraan.findIndex(x => x.id_kendaraan === p.id_kendaraan);
+          if (idx > -1) Object.assign(db.kendaraan[idx], p);
+        } else {
+          db.kendaraan.push(Object.assign({ id_kendaraan: 'KD-' + Date.now().toString().slice(-4), id_user: user.id_user }, p));
+        }
+        saveLocalDemoDb(db);
+        return { success: true, message: 'Data kendaraan disimpan (Preview).' };
+      }
+      if (action === 'updateOdometer') {
+        const k = db.kendaraan.find(x => x.id_kendaraan === params.idKendaraan);
+        if (k) k.odometer_saat_ini = Number(params.newOdo);
+        saveLocalDemoDb(db);
+        return { success: true, message: 'Odometer diperbarui (Preview).' };
+      }
+      if (action === 'deleteKendaraan') {
+        db.kendaraan = db.kendaraan.filter(x => x.id_kendaraan !== params.idKendaraan);
+        db.logs = db.logs.filter(x => x.id_kendaraan !== params.idKendaraan);
+        saveLocalDemoDb(db);
+        return { success: true, message: 'Kendaraan dihapus (Preview).' };
+      }
+      if (action === 'saveLogServis') {
+        const p = params.payload;
+        const k = db.kendaraan.find(x => x.id_kendaraan === p.id_kendaraan);
+        if (k && Number(p.odometer_servis) > Number(k.odometer_saat_ini)) {
+          k.odometer_saat_ini = Number(p.odometer_servis);
+        }
+        db.logs.unshift(Object.assign({
+          id_servis: 'SRV-' + Date.now().toString().slice(-4),
+          id_user: user.id_user,
+          no_polisi: k ? k.no_polisi : '-'
+        }, p));
+        saveLocalDemoDb(db);
+        return { success: true, message: 'Catatan servis disimpan (Preview).' };
+      }
+      if (action === 'deleteLogServis') {
+        db.logs = db.logs.filter(x => x.id_servis !== params.idServis);
+        saveLocalDemoDb(db);
+        return { success: true, message: 'Riwayat servis dihapus (Preview).' };
+      }
+      if (action === 'generateReminderMessage') {
+        const k = db.kendaraan.find(x => x.id_kendaraan === params.idKendaraan);
+        const msg = `🔔 *PENGINGAT SERVIS KENDARAAN*\n🛵 Unit: ${k ? k.nama_kendaraan : '-'}\n🔢 No. Polisi: ${k ? k.no_polisi : '-'}\n📈 Odometer: ${k ? Number(k.odometer_saat_ini).toLocaleString('id-ID') : 0} KM\n\n_MotoCare - Record Kendaraan Bermotor_`;
+        return { success: true, data: { messageText: msg } };
+      }
+      if (action === 'sendReminderEmail') {
+        return { success: true, message: 'Simulasi email pengingat terkirim (Mode Preview).' };
+      }
+      return { success: false, error: 'Fitur ini memerlukan koneksi Google Apps Script.' };
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       const now = new Date();
       document.getElementById('srv_tanggal').value = now.toISOString().split('T')[0];
@@ -979,10 +1193,6 @@
         closeModal('modalConfirm');
       };
 
-      if (!isGasUrlConfigured()) {
-        document.getElementById('apiSetupBanner').classList.remove('hidden');
-      }
-
       restoreSessionOrShowAuth();
     });
 
@@ -998,8 +1208,8 @@
         showToast('URL tidak valid. Harus diawali https://script.google.com/macros/s/', 'error');
         return;
       }
+      IS_LOCAL_DEMO = false;
       localStorage.setItem(GAS_URL_OVERRIDE_KEY, val);
-      document.getElementById('apiSetupBanner').classList.add('hidden');
       closeModal('modalApiConfig');
       showToast('URL Web App Spreadsheet berhasil disimpan!');
       if (CURRENT_SESSION.token) {
@@ -1050,6 +1260,14 @@
     }
 
     function enterAuthenticatedApp() {
+      APP_DATA = {
+        kendaraan: [],
+        logs: [],
+        reminders: [],
+        summary: { totalKendaraan: 0, totalOverdue: 0, totalWarning: 0, biayaBulanIni: 0 }
+      };
+      renderApp();
+
       const authEl = document.getElementById('authScreen');
       const shellEl = document.getElementById('appShell');
       authEl.classList.add('hidden');
@@ -1063,80 +1281,113 @@
     }
 
     function updateUserHeaderUI() {
+      if (!CURRENT_SESSION.user) return;
       const u = CURRENT_SESSION.user;
-      if (!u) return;
-      document.getElementById('headerUserName').textContent = u.nama_lengkap.split(' ')[0];
+      document.getElementById('headerUserName').textContent = u.nama_lengkap || u.username;
       document.getElementById('headerUserHandle').textContent = '@' + u.username;
+      document.getElementById('profileFullName').textContent = u.nama_lengkap || '-';
+      document.getElementById('profileUsername').textContent = '@' + u.username + ' • ' + (u.email || '-');
+      document.getElementById('prof_nama').value = u.nama_lengkap || '';
+      document.getElementById('prof_email').value = u.email || '';
+
+      const badge = document.getElementById('profileConnBadge');
+      if (badge) {
+        badge.textContent = IS_LOCAL_DEMO ? 'MODE PREVIEW' : 'TERHUBUNG';
+        badge.className = IS_LOCAL_DEMO
+          ? 'px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-500 text-white'
+          : 'px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white';
+      }
     }
 
     async function restoreSessionOrShowAuth() {
-      const savedSession = localStorage.getItem(SESSION_STORAGE_KEY);
-      if (!savedSession) {
+      const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (!raw) {
         showAuthScreen();
         return;
       }
 
       try {
-        const parsed = JSON.parse(savedSession);
-        if (!parsed || !parsed.token || !parsed.user) {
+        const parsed = JSON.parse(raw);
+        if (!parsed || !parsed.token) {
+          showAuthScreen();
+          return;
+        }
+        if (parsed.isDemo) {
+          IS_LOCAL_DEMO = true;
+          CURRENT_SESSION = { token: parsed.token, user: parsed.user };
+          enterAuthenticatedApp();
+          return;
+        }
+        if (!isGasUrlConfigured()) {
           showAuthScreen();
           return;
         }
 
-        CURRENT_SESSION = parsed;
-        toggleLoader(true);
-        const res = await callApi('verifySession', { token: CURRENT_SESSION.token });
-        toggleLoader(false);
-
-        if (res.success && res.user) {
-          CURRENT_SESSION.user = res.user;
-          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
+        showLoader(true);
+        const res = await callApi('verifySession', { token: parsed.token });
+        showLoader(false);
+        if (res && res.success) {
+          CURRENT_SESSION = { token: parsed.token, user: res.user };
           enterAuthenticatedApp();
         } else {
-          clearSessionAndShowAuth('Sesi telah berakhir. Silakan login kembali.');
+          clearSessionAndShowAuth();
         }
       } catch (e) {
-        toggleLoader(false);
-        clearSessionAndShowAuth('');
+        showLoader(false);
+        clearSessionAndShowAuth();
       }
     }
 
     function clearSessionAndShowAuth(msg) {
       CURRENT_SESSION = { token: null, user: null };
+      IS_LOCAL_DEMO = false;
+      APP_DATA = {
+        kendaraan: [],
+        logs: [],
+        reminders: [],
+        summary: { totalKendaraan: 0, totalOverdue: 0, totalWarning: 0, biayaBulanIni: 0 }
+      };
       localStorage.removeItem(SESSION_STORAGE_KEY);
+      renderApp();
       showAuthScreen();
       if (msg) showToast(msg, 'error');
     }
 
     async function handleRegisterSubmit(e) {
       e.preventDefault();
-      const pass = document.getElementById('reg_password').value;
+      const nama = document.getElementById('reg_nama').value.trim();
+      const username = document.getElementById('reg_username').value.trim();
+      const email = document.getElementById('reg_email').value.trim();
+      const password = document.getElementById('reg_password').value;
       const confirmPass = document.getElementById('reg_password_confirm').value;
 
-      if (pass !== confirmPass) {
+      if (password !== confirmPass) {
         showToast('Konfirmasi kata sandi tidak cocok.', 'error');
         return;
       }
 
-      const payload = {
-        nama_lengkap: document.getElementById('reg_nama').value.trim(),
-        username: document.getElementById('reg_username').value.trim().toLowerCase().replace(/\s+/g, ''),
-        email: document.getElementById('reg_email').value.trim().toLowerCase(),
-        password: pass
-      };
-
       const btn = document.getElementById('btnRegisterSubmit');
       btn.disabled = true;
-      toggleLoader(true);
+      showLoader(true);
 
       try {
-        const res = await callApi('registerUser', { payload: payload });
-        toggleLoader(false);
+        const res = await callApi('registerUser', {
+          payload: {
+            nama_lengkap: nama,
+            username: username,
+            email: email,
+            password: password
+          }
+        });
+        showLoader(false);
         btn.disabled = false;
-
         if (res.success) {
           CURRENT_SESSION = { token: res.token, user: res.user };
-          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+            token: res.token,
+            user: res.user,
+            isDemo: IS_LOCAL_DEMO
+          }));
           document.getElementById('formRegister').reset();
           showToast('Pendaftaran berhasil! Selamat datang, ' + res.user.nama_lengkap);
           enterAuthenticatedApp();
@@ -1144,7 +1395,7 @@
           showToast(res.error || 'Pendaftaran gagal.', 'error');
         }
       } catch (err) {
-        toggleLoader(false);
+        showLoader(false);
         btn.disabled = false;
         showToast(err.message, 'error');
       }
@@ -1155,80 +1406,85 @@
       const identifier = document.getElementById('login_identifier').value.trim();
       const password = document.getElementById('login_password').value;
 
-      if (!identifier || !password) {
-        showToast('Masukkan username/email dan kata sandi.', 'error');
-        return;
-      }
-
       const btn = document.getElementById('btnLoginSubmit');
       btn.disabled = true;
-      toggleLoader(true);
+      showLoader(true);
 
       try {
-        const res = await callApi('loginUser', { identifier: identifier, password: password });
-        toggleLoader(false);
+        const res = await callApi('loginUser', {
+          identifier: identifier,
+          password: password
+        });
+        showLoader(false);
         btn.disabled = false;
-
         if (res.success) {
           CURRENT_SESSION = { token: res.token, user: res.user };
-          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
-          document.getElementById('formLogin').reset();
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+            token: res.token,
+            user: res.user,
+            isDemo: IS_LOCAL_DEMO
+          }));
+          document.getElementById('login_password').value = '';
           showToast('Selamat datang kembali, ' + res.user.nama_lengkap + '!');
           enterAuthenticatedApp();
         } else {
           showToast(res.error || 'Login gagal.', 'error');
         }
       } catch (err) {
-        toggleLoader(false);
+        showLoader(false);
         btn.disabled = false;
         showToast(err.message, 'error');
       }
     }
 
     async function handleLogout() {
-      const tokenToKill = CURRENT_SESSION.token;
+      const token = CURRENT_SESSION.token;
       closeModal('modalAccount');
-      if (tokenToKill) {
-        callApi('logoutUser', { token: tokenToKill }).catch(() => {});
-      }
-      clearSessionAndShowAuth('Anda telah keluar dari akun.');
+      showLoader(true);
+      try {
+        if (token) {
+          await callApi('logoutUser', { token: token });
+        }
+      } catch (e) {}
+      showLoader(false);
+      clearSessionAndShowAuth();
+      showToast('Anda telah keluar dari aplikasi.');
     }
 
-    // ==================== 2. LUPA PASSWORD (OTP EMAIL) ====================
+    // ==================== LUPA KATA SANDI (OTP EMAIL) ====================
     function openForgotPasswordModal() {
       resetForgotModalSteps();
-      document.getElementById('fp_identifier').value = '';
-      document.getElementById('fp_otp').value = '';
-      document.getElementById('fp_new_password').value = '';
+      document.getElementById('fp_identifier').value = document.getElementById('login_identifier').value.trim();
       openModal('modalForgotPassword');
     }
 
     function resetForgotModalSteps() {
       document.getElementById('fpStep1').classList.remove('hidden');
       document.getElementById('fpStep2').classList.add('hidden');
+      document.getElementById('fp_otp').value = '';
+      document.getElementById('fp_new_password').value = '';
     }
 
     async function handleRequestOtp() {
       const identifier = document.getElementById('fp_identifier').value.trim();
       if (!identifier) {
-        showToast('Masukkan username atau email terdaftar.', 'error');
+        showToast('Masukkan username atau email terdaftar terlebih dahulu.', 'error');
         return;
       }
-
-      toggleLoader(true);
+      showLoader(true);
       try {
         const res = await callApi('requestPasswordReset', { identifier: identifier });
-        toggleLoader(false);
+        showLoader(false);
         if (res.success) {
           document.getElementById('fp_sent_to').textContent = res.maskedEmail || 'email terdaftar';
           document.getElementById('fpStep1').classList.add('hidden');
           document.getElementById('fpStep2').classList.remove('hidden');
           showToast(res.message);
         } else {
-          showToast(res.error, 'error');
+          showToast(res.error || 'Gagal mengirim OTP.', 'error');
         }
       } catch (err) {
-        toggleLoader(false);
+        showLoader(false);
         showToast(err.message, 'error');
       }
     }
@@ -1238,68 +1494,67 @@
       const otp = document.getElementById('fp_otp').value.trim();
       const newPass = document.getElementById('fp_new_password').value;
 
-      if (otp.length !== 6 || newPass.length < 6) {
-        showToast('Masukkan 6 digit kode OTP dan kata sandi baru minimal 6 karakter.', 'error');
+      if (otp.length !== 6) {
+        showToast('Masukkan 6 digit kode OTP dari email Anda.', 'error');
+        return;
+      }
+      if (newPass.length < 6) {
+        showToast('Kata sandi baru minimal 6 karakter.', 'error');
         return;
       }
 
-      toggleLoader(true);
+      showLoader(true);
       try {
         const res = await callApi('confirmPasswordReset', {
           identifier: identifier,
           otp: otp,
           newPassword: newPass
         });
-        toggleLoader(false);
+        showLoader(false);
         if (res.success) {
           closeModal('modalForgotPassword');
           showToast(res.message);
         } else {
-          showToast(res.error, 'error');
+          showToast(res.error || 'Gagal mereset kata sandi.', 'error');
         }
       } catch (err) {
-        toggleLoader(false);
+        showLoader(false);
         showToast(err.message, 'error');
       }
     }
 
-    // ==================== 3. PROFIL PENGGUNA ====================
+    // ==================== PROFIL AKUN ====================
     function openAccountModal() {
-      const u = CURRENT_SESSION.user;
-      if (!u) return;
-      document.getElementById('profileFullName').textContent = u.nama_lengkap;
-      document.getElementById('profileUsername').textContent = '@' + u.username;
-      document.getElementById('prof_nama').value = u.nama_lengkap;
-      document.getElementById('prof_email').value = u.email || '';
+      updateUserHeaderUI();
       document.getElementById('formChangePassword').reset();
       openModal('modalAccount');
     }
 
     async function handleUpdateProfileSubmit(e) {
       e.preventDefault();
-      const payload = {
-        nama_lengkap: document.getElementById('prof_nama').value.trim(),
-        email: document.getElementById('prof_email').value.trim().toLowerCase()
-      };
-
-      toggleLoader(true);
+      const nama = document.getElementById('prof_nama').value.trim();
+      const email = document.getElementById('prof_email').value.trim();
+      showLoader(true);
       try {
         const res = await callApi('updateOwnProfile', {
           token: CURRENT_SESSION.token,
-          payload: payload
+          payload: { nama_lengkap: nama, email: email }
         });
-        toggleLoader(false);
+        showLoader(false);
         if (res.success) {
           CURRENT_SESSION.user = res.user;
-          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(CURRENT_SESSION));
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+            token: CURRENT_SESSION.token,
+            user: res.user,
+            isDemo: IS_LOCAL_DEMO
+          }));
           updateUserHeaderUI();
-          document.getElementById('profileFullName').textContent = res.user.nama_lengkap;
           showToast(res.message);
         } else {
           showToast(res.error, 'error');
         }
       } catch (err) {
-        toggleLoader(false);
+        showLoader(false);
         showToast(err.message, 'error');
       }
     }
@@ -1308,482 +1563,329 @@
       e.preventDefault();
       const oldPass = document.getElementById('cp_old').value;
       const newPass = document.getElementById('cp_new').value;
-
-      toggleLoader(true);
+      showLoader(true);
       try {
         const res = await callApi('changeOwnPassword', {
           token: CURRENT_SESSION.token,
           oldPass: oldPass,
           newPass: newPass
         });
-        toggleLoader(false);
+        showLoader(false);
         if (res.success) {
+          document.getElementById('formChangePassword').reset();
           showToast(res.message);
-          closeModal('modalAccount');
         } else {
           showToast(res.error, 'error');
         }
       } catch (err) {
-        toggleLoader(false);
+        showLoader(false);
         showToast(err.message, 'error');
       }
     }
 
-    // ==================== 4. NAVIGASI & MODAL UTILITIES ====================
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
-      const activePane = document.getElementById('tab-' + tabId);
-      if (activePane) activePane.classList.remove('hidden');
-
-      document.querySelectorAll('.nav-button').forEach(btn => {
-        btn.classList.remove('text-brand-orange');
-        btn.classList.add('text-slate-400');
-      });
-
-      const currentNavBtn = document.getElementById('nav-btn-' + tabId);
-      if (currentNavBtn) {
-        currentNavBtn.classList.remove('text-slate-400');
-        currentNavBtn.classList.add('text-brand-orange');
-      }
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    // ==================== LOAD DATA & RENDER UI ====================
+    function refreshData() {
+      loadAllData(true);
     }
 
-    function openModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-      }
-    }
-
-    function closeModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-      }
-    }
-
-    function showConfirmDialog(title, message, onConfirm) {
-      document.getElementById('confirmTitle').textContent = title;
-      document.getElementById('confirmMessage').textContent = message;
-      confirmCallback = onConfirm;
-      openModal('modalConfirm');
-    }
-
-    function showToast(text, type = 'success') {
-      const box = document.getElementById('toastBox');
-      const toast = document.createElement('div');
-      const bg = type === 'error' ? 'bg-red-600' : 'bg-slate-900';
-      toast.className = `${bg} text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center justify-between pointer-events-auto fade-in`;
-      toast.innerHTML = `
-        <div class="flex items-center space-x-2">
-          <span>${type === 'error' ? '⚠️' : '✅'}</span>
-          <span>${escapeHtml(text)}</span>
-        </div>
-      `;
-      box.appendChild(toast);
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(-10px)';
-        toast.style.transition = 'all 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-      }, 3400);
-    }
-
-    function toggleLoader(show) {
-      const el = document.getElementById('globalLoader');
-      if (show) {
-        el.classList.remove('hidden');
-        el.classList.add('flex');
-      } else {
-        el.classList.add('hidden');
-        el.classList.remove('flex');
-      }
-    }
-
-    // ==================== 5. LOAD & SINKRONISASI DATA SPREADSHEET ====================
-    async function loadAllData() {
-      if (!CURRENT_SESSION.token) {
-        showAuthScreen();
-        return;
-      }
-
-      toggleLoader(true);
+    async function loadAllData(notify = false) {
+      if (!CURRENT_SESSION.token) return;
+      showLoader(true);
       try {
         const res = await callApi('getAppData', { token: CURRENT_SESSION.token });
-        toggleLoader(false);
-
+        showLoader(false);
         if (res.success) {
+          if (res.data && res.data.owner && CURRENT_SESSION.user && res.data.owner.id_user !== CURRENT_SESSION.user.id_user) {
+            clearSessionAndShowAuth('Ketidakcocokan identitas sesi terdeteksi. Silakan masuk ulang.');
+            return;
+          }
           APP_DATA = res.data;
           renderApp();
+          if (notify) showToast('Data berhasil disinkronkan.');
         } else if (res.sessionExpired) {
           clearSessionAndShowAuth(res.error);
         } else {
           showToast(res.error || 'Gagal memuat data.', 'error');
         }
       } catch (err) {
-        toggleLoader(false);
+        showLoader(false);
         showToast(err.message, 'error');
       }
     }
 
-    function refreshData() {
-      loadAllData();
-      showToast('Menyinkronkan data dari Google Spreadsheet...');
-    }
-
-    // ==================== 6. RENDER UI ====================
     function renderApp() {
       renderSummaryCards();
-      renderFeaturedCard();
-      renderMonitoringWatchlist();
-      renderGarageCards();
+      renderFeaturedAlert();
+      renderMonitoringList();
+      renderGarageList();
       populateDropdowns();
       renderHistoryList();
     }
 
     function renderSummaryCards() {
       const s = APP_DATA.summary || {};
-      document.getElementById('statMonthlyExpense').textContent = 'Rp ' + Number(s.biayaBulanIni || 0).toLocaleString('id-ID');
-      document.getElementById('statAttentionCount').textContent = ((s.totalOverdue || 0) + (s.totalWarning || 0)) + ' Unit';
-      document.getElementById('vehicleCountBadge').textContent = (s.totalKendaraan || 0) + ' unit';
+      const totalUnit = Number(s.totalKendaraan) || 0;
+      const attentionCount = (Number(s.totalOverdue) || 0) + (Number(s.totalWarning) || 0);
+      const biaya = Number(s.biayaBulanIni) || 0;
+
+      document.getElementById('vehicleCountBadge').textContent = totalUnit + ' unit';
+      document.getElementById('statAttentionCount').textContent = attentionCount + ' Unit';
+      document.getElementById('statMonthlyExpense').textContent = 'Rp ' + biaya.toLocaleString('id-ID');
     }
 
-    function renderFeaturedCard() {
-      const card = document.getElementById('featuredAlertCard');
-      const title = document.getElementById('featuredTitle');
-      const subtitle = document.getElementById('featuredSubtitle');
-      const dateNote = document.getElementById('featuredDateNote');
-      const kmNote = document.getElementById('featuredKmNote');
+    function renderFeaturedAlert() {
+      const reminders = APP_DATA.reminders || [];
+      const urgent = reminders.find(r => r.status === 'OVERDUE') || reminders.find(r => r.status === 'WARNING') || reminders[0];
 
-      const urgentUnit = (APP_DATA.reminders || []).find(r => r.status === 'OVERDUE') ||
-                         (APP_DATA.reminders || []).find(r => r.status === 'WARNING');
+      const cardEl = document.getElementById('featuredAlertCard');
+      const titleEl = document.getElementById('featuredTitle');
+      const subEl = document.getElementById('featuredSubtitle');
+      const dateEl = document.getElementById('featuredDateNote');
+      const kmEl = document.getElementById('featuredKmNote');
 
-      if (urgentUnit) {
-        card.classList.remove('bg-emerald-600');
-        card.classList.add('bg-brand-orange');
-        title.textContent = `${urgentUnit.nama_kendaraan} (${urgentUnit.no_polisi})`;
-
-        if (urgentUnit.status === 'OVERDUE') {
-          subtitle.textContent = urgentUnit.sisa_km !== null && urgentUnit.sisa_km <= 0 
-            ? `Sudah melewati batas target servis sebesar ${Math.abs(urgentUnit.sisa_km)} KM!`
-            : `Sudah jatuh tempo tanggal servis! Segera jadwalkan perawatan.`;
-        } else {
-          subtitle.textContent = `Mendekati jadwal servis berkala. Sisa jarak sekitar ${urgentUnit.sisa_km || 0} KM.`;
-        }
-
-        dateNote.textContent = urgentUnit.target_tgl ? `Batas: ${urgentUnit.target_tgl}` : 'Periksa Odometer';
-        kmNote.textContent = `Saat ini: ${Number(urgentUnit.odometer_saat_ini).toLocaleString('id-ID')} KM`;
-      } else if (APP_DATA.kendaraan.length === 0) {
-        card.classList.remove('bg-emerald-600');
-        card.classList.add('bg-brand-orange');
-        title.textContent = 'Garasi Masih Kosong';
-        subtitle.textContent = 'Klik tombol + di pojok kanan atas untuk mendaftarkan motor atau mobil Anda.';
-        dateNote.textContent = 'Siap Digunakan';
-        kmNote.textContent = '0 Kendaraan';
-      } else {
-        card.classList.remove('bg-brand-orange');
-        card.classList.add('bg-emerald-600');
-        title.textContent = 'Kondisi Kendaraan Prima';
-        subtitle.textContent = 'Seluruh motor dan mobil Anda berada dalam rentang servis aman.';
-        dateNote.textContent = 'Status: Terawat Baik';
-        kmNote.textContent = `${APP_DATA.kendaraan.length} Kendaraan Terdaftar`;
+      if (!urgent) {
+        activeMessageTargetId = null;
+        cardEl.className = 'bg-brand-orange text-white rounded-3xl p-5 shadow-lg shadow-orange-500/25 relative overflow-hidden transition-all';
+        titleEl.textContent = 'Garasi Masih Kosong';
+        subEl.textContent = 'Tambahkan kendaraan pertama Anda untuk memulai pemantauan jadwal servis.';
+        dateEl.textContent = 'Jadwal: Belum diatur';
+        kmEl.textContent = '0 Unit';
+        return;
       }
+
+      activeMessageTargetId = urgent.id_kendaraan;
+      titleEl.textContent = urgent.nama_kendaraan + ' (' + urgent.no_polisi + ')';
+
+      if (urgent.status === 'OVERDUE') {
+        cardEl.className = 'bg-red-600 text-white rounded-3xl p-5 shadow-lg shadow-red-600/30 relative overflow-hidden transition-all';
+        subEl.textContent = 'JATUH TEMPO! Kendaraan sudah melewati batas target servis berkala.';
+      } else if (urgent.status === 'WARNING') {
+        cardEl.className = 'bg-brand-orange text-white rounded-3xl p-5 shadow-lg shadow-orange-500/25 relative overflow-hidden transition-all';
+        subEl.textContent = 'Segera jadwalkan perawatan berkala sebelum melewati batas.';
+      } else if (urgent.status === 'NEW') {
+        cardEl.className = 'bg-indigo-600 text-white rounded-3xl p-5 shadow-lg shadow-indigo-600/25 relative overflow-hidden transition-all';
+        subEl.textContent = 'Unit baru terdaftar. Silakan catat servis pertama untuk mengaktifkan pengingat.';
+      } else {
+        cardEl.className = 'bg-emerald-600 text-white rounded-3xl p-5 shadow-lg shadow-emerald-600/25 relative overflow-hidden transition-all';
+        subEl.textContent = 'Kondisi terawat! Masih dalam batas aman jadwal servis berikutnya.';
+      }
+
+      dateEl.textContent = urgent.target_tgl ? ('Target: ' + urgent.target_tgl) : 'Jadwal: Rutin';
+      kmEl.textContent = Number(urgent.odometer_saat_ini).toLocaleString('id-ID') + ' KM';
     }
 
-    function renderMonitoringWatchlist() {
-      const container = document.getElementById('monitoringList');
-      const list = APP_DATA.reminders || [];
+    function renderMonitoringList() {
+      const box = document.getElementById('monitoringList');
+      const reminders = APP_DATA.reminders || [];
 
-      if (list.length === 0) {
-        container.innerHTML = `
-          <div class="bg-white rounded-2xl p-5 text-center space-y-2.5">
-            <p class="text-slate-500 text-xs font-medium">Belum ada kendaraan di garasi Anda.</p>
-            <button onclick="openKendaraanModal()" class="px-4 py-2 rounded-full bg-indigo-600 text-white text-xs font-bold shadow-sm hover:bg-indigo-700 transition">
-              + Tambah Kendaraan Pertama
+      if (reminders.length === 0) {
+        box.innerHTML = `
+          <div class="bg-white rounded-3xl p-6 text-center space-y-2.5 shadow-sm">
+            <p class="text-xs font-semibold text-slate-500">Belum ada unit kendaraan di akun Anda.</p>
+            <button onclick="openKendaraanModal()" class="px-4 py-2 rounded-full bg-brand-orange text-white text-xs font-bold shadow-md">
+              + Tambah Unit Pertama
             </button>
           </div>
         `;
         return;
       }
 
-      container.innerHTML = list.map(item => {
-        let strokeColor = '#10B981';
-        let percent = 80;
+      box.innerHTML = reminders.map(r => {
+        let badgeStyle = 'bg-emerald-100 text-emerald-700';
+        let ringColor = '#10B981';
+        let progressPct = 35;
 
-        if (item.status === 'OVERDUE') {
-          strokeColor = '#EF4444';
-          percent = 100;
-        } else if (item.status === 'WARNING') {
-          strokeColor = '#F59E0B';
-          percent = 45;
-        } else if (item.status === 'NEW') {
-          strokeColor = '#0EA5E9';
-          percent = 15;
+        if (r.status === 'OVERDUE') {
+          badgeStyle = 'bg-red-100 text-red-700';
+          ringColor = '#EF4444';
+          progressPct = 100;
+        } else if (r.status === 'WARNING') {
+          badgeStyle = 'bg-amber-100 text-amber-800';
+          ringColor = '#F59E0B';
+          progressPct = 82;
+        } else if (r.status === 'NEW') {
+          badgeStyle = 'bg-sky-100 text-sky-700';
+          ringColor = '#0EA5E9';
+          progressPct = 15;
         }
 
-        const radius = 14;
+        const radius = 15;
         const circumference = 2 * Math.PI * radius;
-        const strokeDashoffset = circumference - (percent / 100) * circumference;
+        const dashOffset = circumference - (progressPct / 100) * circumference;
 
-        let statusDesc = 'Aman & Terawat';
-        if (item.status === 'OVERDUE') {
-          statusDesc = item.sisa_km !== null && item.sisa_km <= 0 ? `Lewat ${Math.abs(item.sisa_km)} KM` : 'Jatuh Tempo';
-        } else if (item.status === 'WARNING') {
-          statusDesc = `Sisa ${item.sisa_km} KM lagi`;
-        } else if (item.status === 'NEW') {
-          statusDesc = 'Belum pernah servis';
-        }
+        const sisaInfo = r.sisa_km !== null
+          ? (r.sisa_km <= 0
+              ? `<span class="text-red-600 font-bold">Lewat ${Math.abs(r.sisa_km).toLocaleString('id-ID')} KM</span>`
+              : `Sisa ${r.sisa_km.toLocaleString('id-ID')} KM`)
+          : (r.target_tgl ? `Target ${escapeHtml(r.target_tgl)}` : 'Belum ada target');
 
         return `
-          <div class="bg-white rounded-2xl p-3.5 flex items-center justify-between shadow-sm hover:shadow-md transition">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-extrabold text-xs">
-                ${item.jenis === 'Mobil' ? '🚗' : '🛵'}
+          <div class="bg-white rounded-2xl p-3.5 shadow-sm flex items-center justify-between gap-2.5">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-xs font-extrabold text-slate-900 truncate">${escapeHtml(r.no_polisi)}</span>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold ${badgeStyle}">${escapeHtml(r.status_text)}</span>
               </div>
-              <div>
-                <h3 class="text-xs font-bold text-slate-900 leading-tight">${escapeHtml(item.nama_kendaraan)}</h3>
-                <div class="flex items-center gap-1.5 mt-0.5">
-                  <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">${escapeHtml(item.no_polisi)}</span>
-                  <span class="text-[10px] text-slate-400">• ${Number(item.odometer_saat_ini).toLocaleString('id-ID')} KM</span>
-                </div>
-              </div>
+              <p class="text-[11px] font-semibold text-slate-600 truncate mt-0.5">${escapeHtml(r.nama_kendaraan)}</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">
+                Odo: <b class="text-slate-700">${Number(r.odometer_saat_ini).toLocaleString('id-ID')} KM</b> • ${sisaInfo}
+              </p>
             </div>
-
-            <div class="flex items-center space-x-2">
-              <div class="text-right">
-                <span class="text-[10px] font-bold block" style="color: ${strokeColor}">
-                  ${item.status === 'OVERDUE' ? 'Jatuh Tempo' : item.status === 'WARNING' ? 'Segera Servis' : 'Kondisi Baik'}
-                </span>
-                <span class="text-[9px] text-slate-400">${statusDesc}</span>
-              </div>
-
-              <button onclick="openMessageModal('${item.id_kendaraan}')" class="w-8 h-8 rounded-full bg-slate-50 hover:bg-orange-50 text-slate-500 hover:text-brand-orange border border-slate-100 flex items-center justify-center transition active:scale-95" title="Kirim Pesan Pengingat">
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="openQuickOdoModal('${r.id_kendaraan}')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold transition" title="Update KM">
+                +KM
+              </button>
+              <button onclick="openMessageModal('${r.id_kendaraan}')" class="px-2.5 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-brand-orange text-[10px] font-bold transition" title="Kirim Pesan Pengingat">
                 💬
               </button>
-
-              <div class="relative w-8 h-8 flex items-center justify-center cursor-pointer" onclick="openQuickOdoModal('${item.id_kendaraan}', '${escapeHtml(item.no_polisi)}', ${item.odometer_saat_ini})" title="Klik untuk Update KM">
-                <svg class="w-8 h-8 transform -rotate-90" viewBox="0 0 36 36">
-                  <circle cx="18" cy="18" r="${radius}" stroke="#E2E8F0" stroke-width="3" fill="none" />
-                  <circle cx="18" cy="18" r="${radius}" stroke="${strokeColor}" stroke-width="3.5"
-                    stroke-dasharray="${circumference}" stroke-dashoffset="${strokeDashoffset}" stroke-linecap="round" fill="none" />
-                </svg>
-                <span class="absolute text-[8px] font-bold text-slate-700">KM</span>
-              </div>
+              <svg class="w-9 h-9" viewBox="0 0 38 38">
+                <circle cx="19" cy="19" r="${radius}" fill="none" stroke="#F1F5F9" stroke-width="4" />
+                <circle cx="19" cy="19" r="${radius}" fill="none" stroke="${ringColor}" stroke-width="4"
+                  stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}" stroke-linecap="round"
+                  transform="rotate(-90 19 19)" />
+              </svg>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    function renderGarageCards() {
-      const container = document.getElementById('garageList');
+    function renderGarageList() {
+      const box = document.getElementById('garageList');
       const list = APP_DATA.kendaraan || [];
 
       if (list.length === 0) {
-        container.innerHTML = `
-          <div class="bg-white rounded-3xl p-6 text-center space-y-2.5">
-            <p class="text-slate-400 text-xs">Belum ada kendaraan terdaftar di akun Anda.</p>
-            <button onclick="openKendaraanModal()" class="px-4 py-2 rounded-full bg-indigo-600 text-white text-xs font-bold">+ Tambah Kendaraan</button>
+        box.innerHTML = `
+          <div class="bg-white rounded-3xl p-6 text-center space-y-2.5 shadow-sm">
+            <p class="text-xs font-semibold text-slate-500">Garasi kendaraan Anda masih kosong.</p>
+            <button onclick="openKendaraanModal()" class="px-4 py-2 rounded-full bg-indigo-600 text-white text-xs font-bold shadow-md">
+              + Daftarkan Kendaraan
+            </button>
           </div>
         `;
         return;
       }
 
-      container.innerHTML = list.map(k => `
+      box.innerHTML = list.map(k => `
         <div class="bg-white rounded-3xl p-4 shadow-sm space-y-3">
           <div class="flex items-start justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-xl">
-                ${k.jenis === 'Mobil' ? '🚗' : '🛵'}
-              </div>
-              <div>
-                <h3 class="text-sm font-bold text-slate-900">${escapeHtml(k.nama_kendaraan)}</h3>
-                <p class="text-xs font-extrabold text-indigo-600 mt-0.5">${escapeHtml(k.no_polisi)} <span class="text-slate-400 font-medium">(${k.tahun || '-'})</span></p>
-              </div>
+            <div>
+              <span class="inline-block px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-extrabold">${escapeHtml(k.jenis)} • ${k.tahun || '-'}</span>
+              <h3 class="text-sm font-extrabold text-slate-900 mt-1">${escapeHtml(k.no_polisi)}</h3>
+              <p class="text-xs font-semibold text-slate-600">${escapeHtml(k.nama_kendaraan)}</p>
+              ${k.catatan ? `<p class="text-[11px] text-slate-400 mt-0.5">${escapeHtml(k.catatan)}</p>` : ''}
             </div>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">${k.jenis}</span>
+            <div class="text-right">
+              <span class="block text-[10px] text-slate-400 font-semibold">Odometer</span>
+              <span class="text-sm font-extrabold text-brand-orange">${Number(k.odometer_saat_ini).toLocaleString('id-ID')} KM</span>
+            </div>
           </div>
-
-          <div class="p-2.5 bg-slate-50 rounded-2xl flex items-center justify-between text-xs">
-            <span class="text-slate-500 font-medium">Odometer Terkini:</span>
-            <span class="font-extrabold text-slate-900">${Number(k.odometer_saat_ini).toLocaleString('id-ID')} KM</span>
-          </div>
-
-          ${k.catatan ? `<p class="text-[11px] text-slate-400 italic">“${escapeHtml(k.catatan)}”</p>` : ''}
-
-          <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
-            <div class="flex space-x-1.5">
-              <button onclick="openQuickOdoModal('${k.id_kendaraan}', '${escapeHtml(k.no_polisi)}', ${k.odometer_saat_ini})" class="px-3 py-1.5 rounded-xl bg-orange-50 text-brand-orange text-xs font-bold hover:bg-orange-100 transition">
-                ⚡ Update KM
-              </button>
-              <button onclick="openMessageModal('${k.id_kendaraan}')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition">
-                💬 Pesan
-              </button>
-            </div>
-            <div class="flex space-x-1.5">
-              <button onclick="openEditKendaraanModal('${k.id_kendaraan}')" class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition">Ubah</button>
-              <button onclick="requestDeleteKendaraan('${k.id_kendaraan}', '${escapeHtml(k.no_polisi)}')" class="px-3 py-1.5 rounded-xl bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 transition">Hapus</button>
-            </div>
+          <div class="pt-2.5 border-t border-slate-100 flex items-center gap-2">
+            <button onclick="openQuickOdoModal('${k.id_kendaraan}')" class="flex-1 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition">
+              📍 Update KM
+            </button>
+            <button onclick="openEditKendaraanModal('${k.id_kendaraan}')" class="flex-1 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold transition">
+              ✏️ Edit
+            </button>
+            <button onclick="confirmDeleteKendaraan('${k.id_kendaraan}', '${escapeHtml(k.no_polisi)}')" class="py-1.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-bold transition" title="Hapus Unit">
+              🗑️
+            </button>
           </div>
         </div>
       `).join('');
     }
 
     function populateDropdowns() {
-      const selServis = document.getElementById('srv_kendaraan');
-      const selFilter = document.getElementById('filterLogVehicle');
       const list = APP_DATA.kendaraan || [];
+      const srvSelect = document.getElementById('srv_kendaraan');
+      const filterSelect = document.getElementById('filterLogVehicle');
 
-      let opts = '<option value="">-- Pilih Unit --</option>';
-      let filterOpts = '<option value="ALL">Semua Unit</option>';
+      let srvHtml = '<option value="">-- Pilih Unit --</option>';
+      let filterHtml = '<option value="ALL">Semua Unit</option>';
 
       list.forEach(k => {
-        const label = `${escapeHtml(k.no_polisi)} - ${escapeHtml(k.nama_kendaraan)}`;
-        opts += `<option value="${k.id_kendaraan}">${label}</option>`;
-        filterOpts += `<option value="${k.id_kendaraan}">${label}</option>`;
+        const label = `${k.no_polisi} - ${k.nama_kendaraan}`;
+        srvHtml += `<option value="${k.id_kendaraan}">${escapeHtml(label)}</option>`;
+        filterHtml += `<option value="${k.id_kendaraan}">${escapeHtml(label)}</option>`;
       });
 
-      if (selServis) selServis.innerHTML = opts;
-      if (selFilter) selFilter.innerHTML = filterOpts;
+      srvSelect.innerHTML = srvHtml;
+      filterSelect.innerHTML = filterHtml;
     }
 
     function renderHistoryList() {
-      const container = document.getElementById('historyList');
-      if (!container) return;
-
-      const selFilter = document.getElementById('filterLogVehicle');
-      const filterId = selFilter ? selFilter.value : 'ALL';
-      const searchInput = document.getElementById('searchLogInput');
-      const searchTxt = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      const box = document.getElementById('historyList');
+      const searchTxt = (document.getElementById('searchLogInput').value || '').toLowerCase();
+      const filterVeh = document.getElementById('filterLogVehicle').value;
 
       let logs = APP_DATA.logs || [];
-
-      if (filterId !== 'ALL') logs = logs.filter(l => l.id_kendaraan === filterId);
+      if (filterVeh !== 'ALL') {
+        logs = logs.filter(l => l.id_kendaraan === filterVeh);
+      }
       if (searchTxt) {
         logs = logs.filter(l =>
           (l.no_polisi && l.no_polisi.toLowerCase().includes(searchTxt)) ||
-          (l.bengkel && l.bengkel.toLowerCase().includes(searchTxt)) ||
           (l.kategori_servis && l.kategori_servis.toLowerCase().includes(searchTxt)) ||
+          (l.bengkel && l.bengkel.toLowerCase().includes(searchTxt)) ||
           (l.rincian_servis && l.rincian_servis.toLowerCase().includes(searchTxt))
         );
       }
 
       if (logs.length === 0) {
-        container.innerHTML = `<div class="bg-white rounded-3xl p-6 text-center text-slate-400 text-xs shadow-sm">Belum ada riwayat servis yang tercatat.</div>`;
+        box.innerHTML = `
+          <div class="bg-white rounded-3xl p-6 text-center text-xs text-slate-400 shadow-sm">
+            Belum ada riwayat servis yang cocok.
+          </div>
+        `;
         return;
       }
 
-      container.innerHTML = logs.map(l => `
-        <div class="bg-white rounded-3xl p-4 shadow-sm hover:shadow-md transition space-y-3">
+      box.innerHTML = logs.map(l => `
+        <div class="bg-white rounded-3xl p-4 shadow-sm space-y-2">
           <div class="flex items-start justify-between">
             <div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg">${escapeHtml(l.no_polisi)}</span>
-                <span class="text-[11px] font-bold text-slate-400">${l.tanggal_servis || '-'}</span>
-              </div>
-              <h4 class="text-xs font-bold text-slate-900 mt-1.5">${escapeHtml(l.kategori_servis || 'Servis Berkala')}</h4>
+              <span class="text-xs font-extrabold text-indigo-700">${escapeHtml(l.no_polisi)}</span>
+              <span class="text-[11px] text-slate-400 ml-1.5">• ${escapeHtml(l.tanggal_servis)}</span>
+              <h4 class="text-xs font-bold text-slate-900 mt-1">${escapeHtml(l.kategori_servis || 'Servis Berkala')}</h4>
             </div>
-            <div class="text-right">
-              <span class="text-xs font-extrabold text-slate-900 block">Rp ${Number(l.biaya || 0).toLocaleString('id-ID')}</span>
-              <span class="text-[10px] text-slate-400">${Number(l.odometer_servis || 0).toLocaleString('id-ID')} KM</span>
-            </div>
+            <span class="text-xs font-extrabold text-emerald-600">Rp ${Number(l.biaya || 0).toLocaleString('id-ID')}</span>
           </div>
-
-          ${l.rincian_servis ? `<p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-xl">${escapeHtml(l.rincian_servis)}</p>` : ''}
-
-          <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-            <span class="text-slate-400 font-medium">📍 ${escapeHtml(l.bengkel || 'Bengkel Umum')}</span>
-            <div class="flex items-center gap-2">
-              ${l.target_km_next ? `<span class="text-indigo-600 font-semibold">Target: ${Number(l.target_km_next).toLocaleString('id-ID')} KM</span>` : ''}
-              <button onclick="requestDeleteLog('${l.id_servis}')" class="p-1 rounded-lg text-red-500 hover:bg-red-50 transition" title="Hapus Catatan Servis">🗑️</button>
-            </div>
+          <p class="text-[11px] text-slate-500">
+            KM Servis: <b class="text-slate-700">${Number(l.odometer_servis).toLocaleString('id-ID')} KM</b> • Bengkel: ${escapeHtml(l.bengkel || '-')}
+          </p>
+          ${l.rincian_servis ? `<p class="text-[11px] text-slate-400">${escapeHtml(l.rincian_servis)}</p>` : ''}
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-[10px] font-bold text-brand-orange">
+              Target Next: ${l.target_km_next > 0 ? Number(l.target_km_next).toLocaleString('id-ID') + ' KM' : '-'} ${l.target_tgl_next ? '/ ' + escapeHtml(l.target_tgl_next) : ''}
+            </span>
+            <button onclick="confirmDeleteLog('${l.id_servis}')" class="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-bold transition">
+              Hapus
+            </button>
           </div>
         </div>
       `).join('');
     }
 
-    // ==================== 7. FITUR PESAN PENGINGAT (WHATSAPP / EMAIL) ====================
-    async function openMessageModal(idKendaraan) {
-      activeMessageTargetId = idKendaraan;
-      toggleLoader(true);
-      try {
-        const res = await callApi('generateReminderMessage', {
-          token: CURRENT_SESSION.token,
-          idKendaraan: idKendaraan
-        });
-        toggleLoader(false);
-        if (res.success) {
-          document.getElementById('reminderMessageContent').value = res.data.messageText;
-          openModal('modalMessage');
-        } else {
-          showToast(res.error || 'Gagal memuat format pesan.', 'error');
-        }
-      } catch (err) {
-        toggleLoader(false);
-        showToast(err.message, 'error');
+    // ==================== NAVIGASI TAB ====================
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-pane').forEach(el => {
+        el.classList.add('hidden');
+      });
+      const target = document.getElementById('tab-' + tabName);
+      if (target) target.classList.remove('hidden');
+
+      document.querySelectorAll('.nav-button').forEach(btn => {
+        btn.classList.remove('text-brand-orange');
+        btn.classList.add('text-slate-400');
+      });
+      const activeBtn = document.getElementById('nav-btn-' + tabName);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-slate-400');
+        activeBtn.classList.add('text-brand-orange');
       }
     }
 
-    function openMessageModalCurrentUrgent() {
-      const urgent = (APP_DATA.reminders || []).find(r => r.status === 'OVERDUE') ||
-                     (APP_DATA.reminders || []).find(r => r.status === 'WARNING');
-      if (urgent) {
-        openMessageModal(urgent.id_kendaraan);
-      } else if (APP_DATA.kendaraan.length > 0) {
-        openMessageModal(APP_DATA.kendaraan[0].id_kendaraan);
-      } else {
-        showToast('Tambahkan kendaraan terlebih dahulu.', 'error');
-      }
-    }
-
-    function sendViaWhatsApp() {
-      const text = document.getElementById('reminderMessageContent').value;
-      if (!text) return;
-      const url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(text);
-      window.open(url, '_blank');
-      showToast('Membuka WhatsApp...');
-    }
-
-    function copyReminderMessage() {
-      const textarea = document.getElementById('reminderMessageContent');
-      textarea.select();
-      textarea.setSelectionRange(0, 99999);
-      try {
-        if (document.execCommand('copy')) {
-          showToast('Teks pesan berhasil disalin ke clipboard!');
-        } else {
-          showToast('Gagal menyalin secara otomatis.', 'error');
-        }
-      } catch (err) {
-        showToast('Gagal menyalin teks.', 'error');
-      }
-    }
-
-    async function triggerEmailNotification() {
-      if (!activeMessageTargetId) return;
-      toggleLoader(true);
-      try {
-        const res = await callApi('sendReminderEmail', {
-          token: CURRENT_SESSION.token,
-          idKendaraan: activeMessageTargetId
-        });
-        toggleLoader(false);
-        if (res.success) {
-          showToast(res.message);
-          closeModal('modalMessage');
-        } else {
-          showToast(res.error, 'error');
-        }
-      } catch (err) {
-        toggleLoader(false);
-        showToast(err.message, 'error');
-      }
-    }
-
-    // ==================== 8. KENDARAAN, ODOMETER & SERVIS CRUD ====================
+    // ==================== CRUD KENDARAAN & ODOMETER ====================
     function openKendaraanModal() {
       document.getElementById('modalKendaraanTitle').textContent = 'Tambah Kendaraan Baru';
       document.getElementById('formKendaraanModal').reset();
@@ -1792,9 +1894,9 @@
     }
 
     function openEditKendaraanModal(id) {
-      const k = APP_DATA.kendaraan.find(x => x.id_kendaraan === id);
+      const k = (APP_DATA.kendaraan || []).find(item => item.id_kendaraan === id);
       if (!k) return;
-      document.getElementById('modalKendaraanTitle').textContent = 'Ubah Data Kendaraan';
+      document.getElementById('modalKendaraanTitle').textContent = 'Edit Data Kendaraan';
       document.getElementById('modal_k_id').value = k.id_kendaraan;
       document.getElementById('modal_k_nopol').value = k.no_polisi;
       document.getElementById('modal_k_nama').value = k.nama_kendaraan;
@@ -1807,23 +1909,25 @@
 
     async function handleSaveKendaraanModal(e) {
       e.preventDefault();
-      const payload = {
-        id_kendaraan: document.getElementById('modal_k_id').value,
-        no_polisi: document.getElementById('modal_k_nopol').value.trim().toUpperCase(),
-        nama_kendaraan: document.getElementById('modal_k_nama').value.trim(),
-        jenis: document.getElementById('modal_k_jenis').value,
-        tahun: Number(document.getElementById('modal_k_tahun').value) || new Date().getFullYear(),
-        odometer_saat_ini: Number(document.getElementById('modal_k_odo').value) || 0,
-        catatan: document.getElementById('modal_k_catatan').value.trim()
-      };
+      const btn = document.getElementById('btnSaveKendaraanModal');
+      btn.disabled = true;
+      showLoader(true);
 
-      toggleLoader(true);
       try {
         const res = await callApi('saveKendaraan', {
           token: CURRENT_SESSION.token,
-          payload: payload
+          payload: {
+            id_kendaraan: document.getElementById('modal_k_id').value,
+            no_polisi: document.getElementById('modal_k_nopol').value,
+            nama_kendaraan: document.getElementById('modal_k_nama').value,
+            jenis: document.getElementById('modal_k_jenis').value,
+            tahun: document.getElementById('modal_k_tahun').value,
+            odometer_saat_ini: document.getElementById('modal_k_odo').value,
+            catatan: document.getElementById('modal_k_catatan').value
+          }
         });
-        toggleLoader(false);
+        showLoader(false);
+        btn.disabled = false;
         if (res.success) {
           closeModal('modalKendaraan');
           showToast(res.message);
@@ -1832,69 +1936,79 @@
           showToast(res.error, 'error');
         }
       } catch (err) {
-        toggleLoader(false);
+        showLoader(false);
+        btn.disabled = false;
         showToast(err.message, 'error');
       }
     }
 
-    function requestDeleteKendaraan(id, nopol) {
-      showConfirmDialog('Hapus Kendaraan?', `Data ${nopol} beserta seluruh riwayat servisnya akan dihapus permanen.`, async function() {
-        toggleLoader(true);
-        try {
-          const res = await callApi('deleteKendaraan', {
-            token: CURRENT_SESSION.token,
-            idKendaraan: id
-          });
-          toggleLoader(false);
-          if (res.success) {
-            showToast(res.message);
-            loadAllData();
-          } else {
-            showToast(res.error, 'error');
+    function confirmDeleteKendaraan(id, nopol) {
+      openConfirmDialog(
+        'Hapus Kendaraan',
+        `Hapus unit ${nopol} beserta seluruh riwayat servisnya?`,
+        async function() {
+          showLoader(true);
+          try {
+            const res = await callApi('deleteKendaraan', {
+              token: CURRENT_SESSION.token,
+              idKendaraan: id
+            });
+            showLoader(false);
+            if (res.success) {
+              showToast(res.message);
+              loadAllData();
+            } else {
+              showToast(res.error, 'error');
+            }
+          } catch (err) {
+            showLoader(false);
+            showToast(err.message, 'error');
           }
-        } catch (err) {
-          toggleLoader(false);
-          showToast(err.message, 'error');
         }
-      });
+      );
     }
 
     function openQuickOdoSelector() {
-      if (APP_DATA.kendaraan.length === 0) {
-        showToast('Tambahkan kendaraan terlebih dahulu!', 'error');
+      const list = APP_DATA.kendaraan || [];
+      if (list.length === 0) {
+        showToast('Tambahkan unit kendaraan terlebih dahulu.', 'error');
+        openKendaraanModal();
         return;
       }
-      const first = APP_DATA.kendaraan[0];
-      openQuickOdoModal(first.id_kendaraan, first.no_polisi, first.odometer_saat_ini);
+      openQuickOdoModal(list[0].id_kendaraan);
     }
 
-    function openQuickOdoModal(id, nopol, currentKm) {
-      document.getElementById('quick_odo_kid').value = id;
-      document.getElementById('quick_odo_unit_name').textContent = `Unit: ${nopol}`;
-      document.getElementById('quick_odo_current').textContent = `KM Terakhir: ${Number(currentKm).toLocaleString('id-ID')} KM`;
-      document.getElementById('quick_odo_val').value = currentKm;
-      document.getElementById('quick_odo_val').min = currentKm;
+    function openQuickOdoModal(id) {
+      const k = (APP_DATA.kendaraan || []).find(item => item.id_kendaraan === id);
+      if (!k) return;
+      document.getElementById('quick_odo_kid').value = k.id_kendaraan;
+      document.getElementById('quick_odo_unit_name').textContent = `${k.no_polisi} — ${k.nama_kendaraan}`;
+      document.getElementById('quick_odo_current').textContent = `Odometer terakhir: ${Number(k.odometer_saat_ini).toLocaleString('id-ID')} KM`;
+      const input = document.getElementById('quick_odo_val');
+      input.value = k.odometer_saat_ini;
+      input.min = k.odometer_saat_ini;
       openModal('modalQuickOdo');
     }
 
-    function bumpOdo(amount) {
+    function bumpOdo(delta) {
       const input = document.getElementById('quick_odo_val');
-      input.value = (Number(input.value) || 0) + amount;
+      input.value = (Number(input.value) || 0) + delta;
     }
 
     async function handleQuickOdoSubmit(e) {
       e.preventDefault();
-      const id = document.getElementById('quick_odo_kid').value;
-      const newOdo = Number(document.getElementById('quick_odo_val').value) || 0;
+      const btn = document.getElementById('btnSaveQuickOdo');
+      btn.disabled = true;
+      showLoader(true);
 
-      toggleLoader(true);
       try {
         const res = await callApi('updateOdometer', {
           token: CURRENT_SESSION.token,
-          idKendaraan: id,
-          newOdo: newOdo
+          idKendaraan: document.getElementById('quick_odo_kid').value,
+          newOdo: document.getElementById('quick_odo_val').value
         });
-        toggleLoader(false);
+        showLoader(false);
+        btn.disabled = false;
         if (res.success) {
           closeModal('modalQuickOdo');
           showToast(res.message);
@@ -1903,28 +2017,30 @@
           showToast(res.error, 'error');
         }
       } catch (err) {
-        toggleLoader(false);
+        showLoader(false);
+        btn.disabled = false;
         showToast(err.message, 'error');
       }
     }
 
-    function toggleTag(btn, name) {
-      const idx = selectedServiceTags.indexOf(name);
+    // ==================== CATAT & HAPUS SERVIS ====================
+    function toggleTag(btn, label) {
+      const idx = selectedServiceTags.indexOf(label);
       if (idx > -1) {
         selectedServiceTags.splice(idx, 1);
         btn.classList.remove('bg-indigo-600', 'text-white');
         btn.classList.add('bg-slate-100', 'text-slate-600');
       } else {
-        selectedServiceTags.push(name);
-        btn.classList.add('bg-indigo-600', 'text-white');
+        selectedServiceTags.push(label);
         btn.classList.remove('bg-slate-100', 'text-slate-600');
+        btn.classList.add('bg-indigo-600', 'text-white');
       }
       document.getElementById('srv_kategori').value = selectedServiceTags.join(', ');
     }
 
     function onServiceVehicleSelected() {
       const id = document.getElementById('srv_kendaraan').value;
-      const k = APP_DATA.kendaraan.find(x => x.id_kendaraan === id);
+      const k = (APP_DATA.kendaraan || []).find(item => item.id_kendaraan === id);
       if (k) {
         document.getElementById('srv_odometer').value = k.odometer_saat_ini;
         autoCalculateTargets();
@@ -1932,9 +2048,9 @@
     }
 
     function autoCalculateTargets() {
-      const curKm = Number(document.getElementById('srv_odometer').value) || 0;
-      if (curKm > 0 && !document.getElementById('srv_target_km').value) {
-        document.getElementById('srv_target_km').value = curKm + 2500;
+      const odo = Number(document.getElementById('srv_odometer').value) || 0;
+      if (odo > 0) {
+        document.getElementById('srv_target_km').value = odo + 2500;
       }
       if (!document.getElementById('srv_target_tgl').value) {
         const d = new Date();
@@ -1943,88 +2059,213 @@
       }
     }
 
-    function addKmQuick(km) {
+    function addKmQuick(addKm) {
       const base = Number(document.getElementById('srv_odometer').value) || 0;
-      document.getElementById('srv_target_km').value = base + km;
+      document.getElementById('srv_target_km').value = base + addKm;
     }
 
-    function addDaysQuick(days) {
-      const baseD = new Date(document.getElementById('srv_tanggal').value || new Date());
-      baseD.setDate(baseD.getDate() + days);
-      document.getElementById('srv_target_tgl').value = baseD.toISOString().split('T')[0];
+    function addDaysQuick(addDays) {
+      const baseStr = document.getElementById('srv_tanggal').value || new Date().toISOString().split('T')[0];
+      const d = new Date(baseStr);
+      d.setDate(d.getDate() + addDays);
+      document.getElementById('srv_target_tgl').value = d.toISOString().split('T')[0];
     }
 
     function resetServiceForm() {
+      document.getElementById('formService').reset();
+      document.getElementById('srv_tanggal').value = new Date().toISOString().split('T')[0];
       selectedServiceTags = [];
+      document.getElementById('srv_kategori').value = '';
       document.querySelectorAll('#serviceTagList button').forEach(b => {
         b.classList.remove('bg-indigo-600', 'text-white');
         b.classList.add('bg-slate-100', 'text-slate-600');
       });
-      document.getElementById('formService').reset();
-      document.getElementById('srv_tanggal').value = new Date().toISOString().split('T')[0];
     }
 
     async function handleSaveService(e) {
       e.preventDefault();
-      const payload = {
-        id_kendaraan: document.getElementById('srv_kendaraan').value,
-        tanggal_servis: document.getElementById('srv_tanggal').value,
-        odometer_servis: Number(document.getElementById('srv_odometer').value) || 0,
-        kategori_servis: document.getElementById('srv_kategori').value || 'Servis Berkala',
-        biaya: Number(document.getElementById('srv_biaya').value) || 0,
-        bengkel: document.getElementById('srv_bengkel').value.trim(),
-        rincian_servis: document.getElementById('srv_rincian').value.trim(),
-        target_km_next: Number(document.getElementById('srv_target_km').value) || 0,
-        target_tgl_next: document.getElementById('srv_target_tgl').value
-      };
+      const btn = document.getElementById('btnSaveService');
+      btn.disabled = true;
+      showLoader(true);
 
-      toggleLoader(true);
       try {
         const res = await callApi('saveLogServis', {
           token: CURRENT_SESSION.token,
-          payload: payload
+          payload: {
+            id_kendaraan: document.getElementById('srv_kendaraan').value,
+            tanggal_servis: document.getElementById('srv_tanggal').value,
+            odometer_servis: document.getElementById('srv_odometer').value,
+            kategori_servis: document.getElementById('srv_kategori').value || 'Servis Berkala',
+            biaya: document.getElementById('srv_biaya').value,
+            bengkel: document.getElementById('srv_bengkel').value,
+            rincian_servis: document.getElementById('srv_rincian').value,
+            target_km_next: document.getElementById('srv_target_km').value,
+            target_tgl_next: document.getElementById('srv_target_tgl').value
+          }
         });
-        toggleLoader(false);
+        showLoader(false);
+        btn.disabled = false;
         if (res.success) {
           showToast(res.message);
           resetServiceForm();
-          loadAllData();
           switchTab('dashboard');
+          loadAllData();
         } else {
           showToast(res.error, 'error');
         }
       } catch (err) {
-        toggleLoader(false);
+        showLoader(false);
+        btn.disabled = false;
         showToast(err.message, 'error');
       }
     }
 
-    function requestDeleteLog(id) {
-      showConfirmDialog('Hapus Catatan Servis?', 'Entri nota servis ini akan dihapus dari riwayat Anda.', async function() {
-        toggleLoader(true);
-        try {
-          const res = await callApi('deleteLogServis', {
-            token: CURRENT_SESSION.token,
-            idServis: id
-          });
-          toggleLoader(false);
-          if (res.success) {
-            showToast(res.message);
-            loadAllData();
-          } else {
-            showToast(res.error, 'error');
+    function confirmDeleteLog(idServis) {
+      openConfirmDialog(
+        'Hapus Riwayat Servis',
+        'Apakah Anda yakin ingin menghapus catatan servis ini?',
+        async function() {
+          showLoader(true);
+          try {
+            const res = await callApi('deleteLogServis', {
+              token: CURRENT_SESSION.token,
+              idServis: idServis
+            });
+            showLoader(false);
+            if (res.success) {
+              showToast(res.message);
+              loadAllData();
+            } else {
+              showToast(res.error, 'error');
+            }
+          } catch (err) {
+            showLoader(false);
+            showToast(err.message, 'error');
           }
-        } catch (err) {
-          toggleLoader(false);
-          showToast(err.message, 'error');
         }
-      });
+      );
+    }
+
+    // ==================== PESAN PENGINGAT (WHATSAPP & EMAIL) ====================
+    function openMessageModalCurrentUrgent() {
+      if (!activeMessageTargetId) {
+        showToast('Belum ada unit kendaraan yang terdaftar.', 'error');
+        return;
+      }
+      openMessageModal(activeMessageTargetId);
+    }
+
+    async function openMessageModal(idKendaraan) {
+      activeMessageTargetId = idKendaraan;
+      showLoader(true);
+      try {
+        const res = await callApi('generateReminderMessage', {
+          token: CURRENT_SESSION.token,
+          idKendaraan: idKendaraan
+        });
+        showLoader(false);
+        if (res.success) {
+          document.getElementById('reminderMessageContent').value = res.data.messageText;
+          openModal('modalMessage');
+        } else {
+          showToast(res.error, 'error');
+        }
+      } catch (err) {
+        showLoader(false);
+        showToast(err.message, 'error');
+      }
+    }
+
+    function sendViaWhatsApp() {
+      const text = document.getElementById('reminderMessageContent').value;
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    }
+
+    function copyReminderMessage() {
+      const ta = document.getElementById('reminderMessageContent');
+      ta.select();
+      ta.setSelectionRange(0, 99999);
+      try {
+        document.execCommand('copy');
+        showToast('Teks pengingat berhasil disalin!');
+      } catch (e) {
+        showToast('Gagal menyalin teks.', 'error');
+      }
+    }
+
+    async function triggerEmailNotification() {
+      if (!activeMessageTargetId) return;
+      showLoader(true);
+      try {
+        const res = await callApi('sendReminderEmail', {
+          token: CURRENT_SESSION.token,
+          idKendaraan: activeMessageTargetId
+        });
+        showLoader(false);
+        if (res.success) {
+          closeModal('modalMessage');
+          showToast(res.message);
+        } else {
+          showToast(res.error, 'error');
+        }
+      } catch (err) {
+        showLoader(false);
+        showToast(err.message, 'error');
+      }
+    }
+
+    // ==================== UTILITAS MODAL, TOAST & LOADER ====================
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+      }
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      }
+    }
+
+    function openConfirmDialog(title, message, onConfirm) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      confirmCallback = onConfirm;
+      openModal('modalConfirm');
+    }
+
+    function showLoader(show) {
+      const el = document.getElementById('globalLoader');
+      if (show) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+      } else {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      }
+    }
+
+    function showToast(message, type = 'success') {
+      const box = document.getElementById('toastBox');
+      const div = document.createElement('div');
+      const bg = type === 'error' ? 'bg-red-600' : 'bg-slate-900';
+      div.className = `${bg} text-white px-4 py-3 rounded-2xl text-xs font-bold shadow-xl transition-opacity duration-300`;
+      div.textContent = message;
+      box.appendChild(div);
+      setTimeout(() => {
+        div.style.opacity = '0';
+        setTimeout(() => div.remove(), 300);
+      }, 3200);
     }
 
     function escapeHtml(text) {
-      if (!text) return '';
+      if (text === null || text === undefined) return '';
       const div = document.createElement('div');
-      div.textContent = text;
+      div.textContent = String(text);
       return div.innerHTML;
     }
   </script>
